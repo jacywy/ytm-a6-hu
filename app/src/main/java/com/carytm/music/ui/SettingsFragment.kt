@@ -87,7 +87,7 @@ class SettingsFragment : Fragment() {
         }
 
         btnClearCache.setOnClickListener {
-            MusicPlayer.clearCache()
+            MusicPlayer.clearCache(requireContext())
             updateCacheUI()
             Toast.makeText(context, "本地缓存已清空", Toast.LENGTH_SHORT).show()
         }

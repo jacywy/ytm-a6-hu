@@ -18,6 +18,7 @@ import com.carytm.music.model.PlaylistItem
 import com.carytm.music.model.SongItem
 import com.carytm.music.net.InnertubeApi
 import com.carytm.music.player.MusicPlayer
+import com.carytm.music.player.OfflineRepository
 import com.carytm.music.ui.adapter.PlaylistAdapter
 import com.carytm.music.ui.adapter.SongAdapter
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +29,9 @@ import kotlinx.coroutines.launch
 class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     private lateinit var layoutPlaylistsContainer: View
+    private lateinit var cardOfflineMusic: View
+    private lateinit var tvOfflineCount: TextView
+    private lateinit var btnQuickOfflinePlay: Button
     private lateinit var bannerLoginPrompt: View
     private lateinit var tvAccountStatus: TextView
     private lateinit var btnLoginTrigger: Button
@@ -55,6 +59,9 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         val view = inflater.inflate(R.layout.fragment_library, container, false)
         
         layoutPlaylistsContainer = view.findViewById(R.id.layout_playlists_container)
+        cardOfflineMusic = view.findViewById(R.id.card_offline_music)
+        tvOfflineCount = view.findViewById(R.id.tv_offline_count)
+        btnQuickOfflinePlay = view.findViewById(R.id.btn_quick_offline_play)
         bannerLoginPrompt = view.findViewById(R.id.banner_login_prompt)
         tvAccountStatus = view.findViewById(R.id.tv_account_status)
         btnLoginTrigger = view.findViewById(R.id.btn_login_trigger)
@@ -69,6 +76,21 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         pbDetailLoading = view.findViewById(R.id.pb_detail_loading)
         tvDetailEmpty = view.findViewById(R.id.tv_detail_empty)
         rvPlaylistTracks = view.findViewById(R.id.rv_playlist_tracks)
+
+        cardOfflineMusic.setOnClickListener {
+            openOfflineDetail()
+        }
+
+        btnQuickOfflinePlay.setOnClickListener {
+            val list = OfflineRepository.getFullyCachedSongs(requireContext())
+            if (list.isNotEmpty()) {
+                MusicPlayer.setShuffle(true)
+                MusicPlayer.playQueue(list.shuffled(), 0)
+                Toast.makeText(context, "开始随机播放本地离线音乐: ${list.size} 首歌曲", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "暂无完整离线歌曲，在线听歌时会自动完整缓存", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         // 2-column grid for car landscape screen
         rvPlaylists.layoutManager = GridLayoutManager(context, 2)
@@ -184,7 +206,44 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         dialog.show()
     }
 
+    private fun openOfflineDetail() {
+        layoutPlaylistsContainer.visibility = View.GONE
+        layoutPlaylistDetail.visibility = View.VISIBLE
+
+        tvDetailTitle.text = "本地离线音乐"
+        pbDetailLoading.visibility = View.GONE
+        loadTracksJob?.cancel()
+
+        val list = OfflineRepository.getFullyCachedSongs(requireContext())
+        currentTracks.clear()
+        if (list.isNotEmpty()) {
+            currentTracks.addAll(list)
+            tvDetailSubtitle.text = "共 ${list.size} 首完整歌曲 • 无网络随时播放"
+            tvDetailEmpty.visibility = View.GONE
+            songAdapter.submitList(currentTracks)
+            songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
+        } else {
+            tvDetailSubtitle.text = "0 首歌曲"
+            tvDetailEmpty.visibility = View.VISIBLE
+            tvDetailEmpty.text = "暂无完整离线歌曲\n在线听歌时会自动在本地完整缓存"
+            songAdapter.submitList(emptyList())
+        }
+    }
+
+    private fun updateOfflineCardUI() {
+        context?.let { ctx ->
+            val count = OfflineRepository.getFullyCachedCount(ctx)
+            tvOfflineCount.text = "已完整缓存 $count 首歌曲 • 无网络可直接播放"
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateOfflineCardUI()
+    }
+
     fun refreshData() {
+        updateOfflineCardUI()
         val repo = AccountRepository(requireContext())
         if (repo.isLoggedIn) {
             bannerLoginPrompt.visibility = View.GONE

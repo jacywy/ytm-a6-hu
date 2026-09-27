@@ -26,6 +26,7 @@ object MusicPlayer {
 
     private var exoPlayer: ExoPlayer? = null
     private var simpleCache: SimpleCache? = null
+    private var appContext: Context? = null
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var resolveJob: Job? = null
     private var preloadJob: Job? = null
@@ -62,6 +63,7 @@ object MusicPlayer {
     }
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         if (exoPlayer != null) return
 
         val cacheSizeMb = getCacheLimitMb(context)
@@ -87,12 +89,28 @@ object MusicPlayer {
                 listeners.forEach { it.onBuffering(isBuffering) }
 
                 if (playbackState == Player.STATE_ENDED) {
+                    appContext?.let { ctx ->
+                        getCurrentSong()?.let { song ->
+                            OfflineRepository.markSongFullyCached(ctx, song)
+                        }
+                        trimCacheIfNeeded(ctx)
+                    }
                     playNext()
                 }
             }
 
             override fun onPlayerError(error: PlaybackException) {
                 error.printStackTrace()
+                // If offline failed, fallback to online stream
+                val curSong = getCurrentSong()
+                if (curSong != null && appContext?.let { OfflineRepository.isFullyCached(it, curSong.videoId) } == true) {
+                    appContext?.let { OfflineRepository.markSongIncomplete(it, curSong) }
+                    scope.launch {
+                        delay(300)
+                        playCurrent()
+                    }
+                    return
+                }
                 listeners.forEach { it.onError(error.message ?: "播放失败，YouTube 协议可能已变动") }
             }
         })
@@ -109,6 +127,15 @@ object MusicPlayer {
                         val cur = player.currentPosition
                         val total = if (player.duration > 0) player.duration else 0
                         listeners.forEach { it.onProgressUpdate(cur, total) }
+
+                        // Mark fully cached if user reaches near the end of the song
+                        if (total > 15000L && cur >= (total - 5000L)) {
+                            appContext?.let { ctx ->
+                                getCurrentSong()?.let { song ->
+                                    OfflineRepository.markSongFullyCached(ctx, song)
+                                }
+                            }
+                        }
                     }
                 }
                 delay(1000L)
@@ -149,6 +176,7 @@ object MusicPlayer {
     private fun playCurrent() {
         if (currentIndex !in queue.indices) return
         val song = queue[currentIndex]
+        appContext?.let { OfflineRepository.markSongStarted(it, song) }
 
         // 1. Cut off current playing audio IMMEDIATELY so previous song stops
         exoPlayer?.stop()
@@ -173,8 +201,13 @@ object MusicPlayer {
 
         resolveJob = scope.launch {
             isResolving = true
-            val audioUrl = resolvedUrlCache[song.videoId] ?: StreamResolver.resolveAudioUrl(song.videoId, preferOpus)
-            if (!audioUrl.isNullOrBlank()) {
+            val isOffline = appContext?.let { OfflineRepository.isFullyCached(it, song.videoId) } == true
+            val audioUrl = if (isOffline) {
+                resolvedUrlCache[song.videoId] ?: "https://offline.carytm.internal/${song.videoId}"
+            } else {
+                resolvedUrlCache[song.videoId] ?: StreamResolver.resolveAudioUrl(song.videoId, preferOpus)
+            }
+            if (!audioUrl.isNullOrBlank() && !isOffline) {
                 resolvedUrlCache[song.videoId] = audioUrl
             }
             isResolving = false
@@ -197,8 +230,13 @@ object MusicPlayer {
                     .setUpstreamDataSourceFactory(okHttpFactory)
                     .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
+                val mediaItem = MediaItem.Builder()
+                    .setUri(uri)
+                    .setCustomCacheKey(song.videoId)
+                    .build()
+
                 val mediaSource = DefaultMediaSourceFactory(cacheFactory)
-                    .createMediaSource(MediaItem.fromUri(uri))
+                    .createMediaSource(mediaItem)
 
                 player.setMediaSource(mediaSource)
                 player.prepare()
@@ -238,13 +276,14 @@ object MusicPlayer {
 
             if (nextUrl.isNullOrBlank() || !isActive) return@launch
 
-            // Step 2: Pre-cache first 2MB chunk directly into SimpleCache
+            // Step 2: Pre-cache full song directly into SimpleCache
             try {
                 val uri = Uri.parse(nextUrl)
                 val dataSpec = DataSpec.Builder()
                     .setUri(uri)
+                    .setKey(nextSong.videoId)
                     .setPosition(0)
-                    .setLength(2 * 1024 * 1024L) // 2MB
+                    .setLength(C.LENGTH_UNSET.toLong())
                     .build()
 
                 val okHttpFactory = OkHttpDataSource.Factory(NetworkClient.mediaOkHttpClient)
@@ -256,8 +295,16 @@ object MusicPlayer {
 
                 val cacheWriter = CacheWriter(cacheDataSource, dataSpec, null, null)
                 cacheWriter.cache()
+
+                appContext?.let { ctx ->
+                    OfflineRepository.markSongFullyCached(ctx, nextSong, dataSpec.length)
+                    trimCacheIfNeeded(ctx)
+                }
             } catch (e: Throwable) {
-                // Non-critical, pre-cache can be cancelled
+                // Non-critical: if cancelled or interrupted, record as incomplete
+                appContext?.let { ctx ->
+                    OfflineRepository.markSongIncomplete(ctx, nextSong)
+                }
             }
         }
     }
@@ -350,7 +397,54 @@ object MusicPlayer {
         }
     }
 
-    fun clearCache() {
+    fun trimCacheIfNeeded(context: Context) {
+        val limitMb = getCacheLimitMb(context)
+        var usedMb = getUsedCacheSizeMb()
+        if (usedMb <= limitMb) return
+
+        // Priority 1: Purge all incomplete / fragmented tracks first!
+        val incompleteIds = OfflineRepository.getIncompleteVideoIds(context)
+        for (id in incompleteIds) {
+            try {
+                simpleCache?.removeResource(id)
+                OfflineRepository.removeRecord(context, id)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // Also clean up any untracked cache resources
+        val tracked = OfflineRepository.getAllTrackedVideoIds(context).toSet()
+        simpleCache?.keys?.filter { it !in tracked }?.forEach { untrackedKey ->
+            try {
+                simpleCache?.removeResource(untrackedKey)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        usedMb = getUsedCacheSizeMb()
+        if (usedMb <= limitMb) return
+
+        // Priority 2: Purge oldest fully-cached tracks (LRU)
+        val oldestRecords = OfflineRepository.getOldestFullyCachedRecords(context)
+        for (record in oldestRecords) {
+            // Keep the currently playing song safe
+            if (record.videoId == getCurrentSong()?.videoId) continue
+
+            try {
+                simpleCache?.removeResource(record.videoId)
+                OfflineRepository.removeRecord(context, record.videoId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            usedMb = getUsedCacheSizeMb()
+            if (usedMb <= limitMb) break
+        }
+    }
+
+    fun clearCache(context: Context? = null) {
         resolvedUrlCache.clear()
         try {
             simpleCache?.keys?.forEach { key ->
@@ -359,5 +453,7 @@ object MusicPlayer {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        val ctx = context ?: appContext
+        ctx?.let { OfflineRepository.clearAll(it) }
     }
 }
