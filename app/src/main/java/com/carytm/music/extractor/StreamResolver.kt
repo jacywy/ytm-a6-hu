@@ -12,6 +12,7 @@ import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
+import com.carytm.music.model.SongItem
 import java.io.IOException
 
 object StreamResolver {
@@ -103,5 +104,79 @@ object StreamResolver {
             e.printStackTrace()
         }
         return@withContext null
+    }
+
+    /**
+     * Fallback native YouTube search using NewPipeExtractor
+     */
+    suspend fun searchSongs(query: String): List<SongItem> = withContext(Dispatchers.IO) {
+        init()
+        val results = mutableListOf<SongItem>()
+        try {
+            val searchExtractor = ServiceList.YouTube.getSearchExtractor(query)
+            searchExtractor.fetchPage()
+            for (item in searchExtractor.initialPage.items) {
+                if (item is StreamInfoItem) {
+                    val vid = item.url?.substringAfter("v=")?.substringBefore("&") ?: ""
+                    if (vid.isNotBlank()) {
+                        val duration = if (item.duration > 0) {
+                            String.format("%d:%02d", item.duration / 60, item.duration % 60)
+                        } else ""
+                        val thumb = item.thumbnails?.lastOrNull()?.url ?: ""
+                        results.add(
+                            SongItem(
+                                videoId = vid,
+                                title = item.name ?: "未知歌曲",
+                                artist = item.uploaderName ?: "YouTube",
+                                durationText = duration,
+                                durationSec = item.duration,
+                                thumbnailUrl = thumb
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        results
+    }
+
+    /**
+     * Native playlist tracks extraction using NewPipeExtractor
+     */
+    suspend fun getPlaylistSongs(playlistId: String): List<SongItem> = withContext(Dispatchers.IO) {
+        init()
+        val results = mutableListOf<SongItem>()
+        try {
+            val cleanId = playlistId.removePrefix("VL")
+            val url = "https://www.youtube.com/playlist?list=$cleanId"
+            val extractor = ServiceList.YouTube.getPlaylistExtractor(url)
+            extractor.fetchPage()
+            for (item in extractor.initialPage.items) {
+                if (item is StreamInfoItem) {
+                    val vid = item.url?.substringAfter("v=")?.substringBefore("&") ?: ""
+                    if (vid.isNotBlank()) {
+                        val duration = if (item.duration > 0) {
+                            String.format("%d:%02d", item.duration / 60, item.duration % 60)
+                        } else ""
+                        val thumb = item.thumbnails?.lastOrNull()?.url ?: ""
+                        results.add(
+                            SongItem(
+                                videoId = vid,
+                                title = item.name ?: "未知歌曲",
+                                artist = item.uploaderName ?: "YouTube",
+                                durationText = duration,
+                                durationSec = item.duration,
+                                thumbnailUrl = thumb
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        results
     }
 }

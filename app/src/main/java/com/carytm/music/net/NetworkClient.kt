@@ -57,14 +57,17 @@ object NetworkClient {
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0")
                 .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
 
-            // Inject Authorization Token if available
-            accountRepo.accessToken?.let { token ->
-                if (!original.headers.names().contains("Authorization")) {
-                    requestBuilder.header("Authorization", "Bearer $token")
+            // Only inject Authorization Bearer when explicitly requested (e.g. TV OAuth endpoints)
+            if (original.header("X-Use-OAuth") == "true") {
+                requestBuilder.removeHeader("X-Use-OAuth")
+                accountRepo.accessToken?.let { token ->
+                    if (!original.headers.names().contains("Authorization")) {
+                        requestBuilder.header("Authorization", "Bearer $token")
+                    }
                 }
             }
 
-            // Inject Cookies if available
+            // Inject Cookies if available and not explicitly provided
             accountRepo.cookies?.let { cookies ->
                 if (!original.headers.names().contains("Cookie")) {
                     requestBuilder.header("Cookie", cookies)

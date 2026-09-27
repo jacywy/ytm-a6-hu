@@ -77,7 +77,7 @@ class LibraryFragment : Fragment() {
 
     private fun loadUserPlaylists() {
         scope.launch {
-            val list = InnertubeApi.getUserPlaylists()
+            val list = InnertubeApi.getUserPlaylists(requireContext())
             playlistList.clear()
             playlistList.addAll(list)
             playlistAdapter.submitList(playlistList)
