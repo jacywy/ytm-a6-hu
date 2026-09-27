@@ -16,12 +16,17 @@ import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
 import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.upstream.DataSpec
+import com.google.android.exoplayer2.upstream.HttpDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheWriter
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
 import com.google.android.exoplayer2.upstream.cache.SimpleCache
+import com.carytm.music.auth.AccountRepository
 import kotlinx.coroutines.*
 import java.io.File
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 object MusicPlayer {
 
@@ -112,7 +117,12 @@ object MusicPlayer {
                     }
                     return
                 }
-                listeners.forEach { it.onError(error.message ?: (appContext?.getString(R.string.play_error) ?: "Playback failed")) }
+
+                // Invalidate cached URL for failed song so subsequent attempts won't reuse expired/bad URL
+                curSong?.let { resolvedUrlCache.remove(it.videoId) }
+
+                val friendlyMsg = getFriendlyErrorMessage(error)
+                listeners.forEach { it.onError(friendlyMsg) }
             }
         })
 
@@ -216,9 +226,11 @@ object MusicPlayer {
             if (!isActive) return@launch
 
             if (audioUrl.isNullOrBlank()) {
+                resolvedUrlCache.remove(song.videoId)
+                val friendlyMsg = getResolutionErrorMessage()
                 listeners.forEach {
                     it.onBuffering(false)
-                    it.onError(appContext?.getString(R.string.play_error) ?: "Cannot resolve audio stream")
+                    it.onError(friendlyMsg)
                 }
                 return@launch
             }
@@ -464,5 +476,67 @@ object MusicPlayer {
         }
         val ctx = context ?: appContext
         ctx?.let { OfflineRepository.clearAll(it) }
+    }
+
+    fun clearUrlCache() {
+        resolvedUrlCache.clear()
+    }
+
+    private fun getFriendlyErrorMessage(error: PlaybackException): String {
+        val ctx = appContext ?: return error.message ?: "Playback failed"
+        val repo = AccountRepository(ctx)
+        val isLoggedIn = repo.isLoggedIn
+
+        var isHttp403Or401 = false
+        var isNetworkError = false
+
+        var currentCause: Throwable? = error
+        while (currentCause != null) {
+            if (currentCause is HttpDataSource.InvalidResponseCodeException) {
+                val code = currentCause.responseCode
+                if (code == 403 || code == 401) {
+                    isHttp403Or401 = true
+                    break
+                }
+            }
+            if (currentCause is UnknownHostException ||
+                currentCause is SocketTimeoutException ||
+                currentCause is ConnectException
+            ) {
+                isNetworkError = true
+            }
+            currentCause = currentCause.cause
+        }
+
+        if (error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS) {
+            isHttp403Or401 = true
+        } else if (error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+        ) {
+            isNetworkError = true
+        }
+
+        // ExoPlayer default message for media source HTTP 403 is "Source error"
+        if (error.message?.contains("Source error", ignoreCase = true) == true) {
+            isHttp403Or401 = true
+        }
+
+        return when {
+            isHttp403Or401 && !isLoggedIn -> ctx.getString(R.string.error_source_need_login)
+            isHttp403Or401 && isLoggedIn -> ctx.getString(R.string.error_source_auth_failed)
+            isNetworkError -> ctx.getString(R.string.error_network_timeout)
+            !isLoggedIn -> ctx.getString(R.string.error_source_need_login)
+            else -> ctx.getString(R.string.play_error)
+        }
+    }
+
+    private fun getResolutionErrorMessage(): String {
+        val ctx = appContext ?: return "Cannot resolve audio stream"
+        val isLoggedIn = AccountRepository(ctx).isLoggedIn
+        return if (!isLoggedIn) {
+            ctx.getString(R.string.error_source_need_login)
+        } else {
+            ctx.getString(R.string.error_stream_resolve_failed)
+        }
     }
 }

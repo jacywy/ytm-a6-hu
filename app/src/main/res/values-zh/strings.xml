@@ -45,6 +45,10 @@
     <string name="empty_queue">播放队列为空</string>
     <string name="playing_loading">正在解析并缓冲音频...</string>
     <string name="play_error">播放失败，YouTube 协议可能已变动</string>
+    <string name="error_source_need_login">播放失败：此歌曲受版权或限制访问，可能需要登录账号</string>
+    <string name="error_source_auth_failed">播放授权已失效或受地区限制，建议重新登录账号</string>
+    <string name="error_network_timeout">网络连接超时，请检查车载网络</string>
+    <string name="error_stream_resolve_failed">音频解析失败，该歌曲暂不可播</string>
     <string name="notification_channel_name">CarYTM 播放服务</string>
     <string name="notification_channel_desc">车机音乐后台播放服务</string>
     <string name="notification_action_prev">上一首</string>
@@ -109,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">协议热维护说明</string>
-    <string name="settings_version_info">CarYTM v1.0.0 (API 23 车机专用版)</string>
+    <string name="settings_version_info">CarYTM v%s (API 23 车机专用版)</string>
     <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
 
     <!-- LAN Cookie Assistant -->

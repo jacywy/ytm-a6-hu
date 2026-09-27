@@ -48,6 +48,9 @@ class SettingsFragment : Fragment() {
         tvLanguage = view.findViewById(R.id.tv_settings_language)
         btnLanguage = view.findViewById(R.id.btn_settings_language)
 
+        val tvVersion: TextView? = view.findViewById(R.id.tv_settings_version)
+        tvVersion?.text = getString(R.string.settings_version_info, com.carytm.music.BuildConfig.VERSION_NAME)
+
         updateAccountUI()
         updateCacheUI()
         updateLanguageUI()

@@ -2,13 +2,17 @@ package com.carytm.music.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.carytm.music.player.MusicPlayer
 
 class AccountRepository(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("carytm_account", Context.MODE_PRIVATE)
 
     var accessToken: String?
         get() = prefs.getString("access_token", null)
-        set(value) = prefs.edit().putString("access_token", value).apply()
+        set(value) {
+            prefs.edit().putString("access_token", value).apply()
+            MusicPlayer.clearUrlCache()
+        }
 
     var refreshToken: String?
         get() = prefs.getString("refresh_token", null)
@@ -16,7 +20,10 @@ class AccountRepository(context: Context) {
 
     var cookies: String?
         get() = prefs.getString("cookies", null)
-        set(value) = prefs.edit().putString("cookies", value).apply()
+        set(value) {
+            prefs.edit().putString("cookies", value).apply()
+            MusicPlayer.clearUrlCache()
+        }
 
     var accountName: String?
         get() = prefs.getString("account_name", null)
@@ -38,5 +45,6 @@ class AccountRepository(context: Context) {
 
     fun clear() {
         prefs.edit().clear().apply()
+        MusicPlayer.clearUrlCache()
     }
 }

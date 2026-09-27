@@ -45,6 +45,10 @@
     <string name="empty_queue">Playback queue is empty</string>
     <string name="playing_loading">Resolving and buffering audio...</string>
     <string name="play_error">Playback failed, YouTube protocol may have changed</string>
+    <string name="error_source_need_login">Playback failed: Account login may be required for this song</string>
+    <string name="error_source_auth_failed">Playback authorization failed or region restricted. Please re-login.</string>
+    <string name="error_network_timeout">Network connection timeout, please check network settings</string>
+    <string name="error_stream_resolve_failed">Audio resolution failed, this track is unavailable</string>
     <string name="notification_channel_name">CarYTM Playback</string>
     <string name="notification_channel_desc">Car music background playback service</string>
     <string name="notification_action_prev">Previous</string>
@@ -109,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">Protocol &amp; Maintenance</string>
-    <string name="settings_version_info">CarYTM v1.0.0 (API 23 Car Special Edition)</string>
+    <string name="settings_version_info">CarYTM v%s (API 23 Car Special Edition)</string>
     <string name="settings_protocol_desc">This app decouples the NewPipeExtractor protocol engine. When YouTube updates its anti-scraping rules, simply update the version number in GitHub and commit; Actions will build a patched APK in 3 minutes.</string>
 
     <!-- LAN Cookie Assistant -->
