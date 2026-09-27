@@ -25,16 +25,22 @@ class GoogleDeviceAuthManager(private val context: Context) {
         const val TOKEN_URL = "https://oauth2.googleapis.com/token"
     }
 
+    private val effectiveClientId: String
+        get() = accountRepo.customClientId?.takeIf { it.isNotBlank() } ?: CLIENT_ID
+
+    private val effectiveClientSecret: String?
+        get() = accountRepo.customClientSecret?.takeIf { it.isNotBlank() }
+
     suspend fun requestDeviceCode(): DeviceCodeResponse? = withContext(Dispatchers.IO) {
         try {
-            val formBody = FormBody.Builder()
-                .add("client_id", CLIENT_ID)
+            val formBuilder = FormBody.Builder()
+                .add("client_id", effectiveClientId)
                 .add("scope", SCOPE)
-                .build()
+            effectiveClientSecret?.let { formBuilder.add("client_secret", it) }
 
             val request = Request.Builder()
                 .url(DEVICE_CODE_URL)
-                .post(formBody)
+                .post(formBuilder.build())
                 .build()
 
             val response = NetworkClient.okHttpClient.newCall(request).execute()
@@ -65,15 +71,15 @@ class GoogleDeviceAuthManager(private val context: Context) {
                 delay(interval)
 
                 try {
-                    val formBody = FormBody.Builder()
-                        .add("client_id", CLIENT_ID)
+                    val formBuilder = FormBody.Builder()
+                        .add("client_id", effectiveClientId)
                         .add("device_code", deviceCode)
                         .add("grant_type", "http://oauth.net/grant_type/device/1.0")
-                        .build()
+                    effectiveClientSecret?.let { formBuilder.add("client_secret", it) }
 
                     val request = Request.Builder()
                         .url(TOKEN_URL)
-                        .post(formBody)
+                        .post(formBuilder.build())
                         .build()
 
                     val response = NetworkClient.okHttpClient.newCall(request).execute()

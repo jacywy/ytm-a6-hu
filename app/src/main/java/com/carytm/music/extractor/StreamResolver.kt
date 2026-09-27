@@ -9,6 +9,7 @@ import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
+import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import java.io.IOException
@@ -19,7 +20,7 @@ object StreamResolver {
 
     fun init() {
         if (initialized) return
-        NewPipe.init(object : Downloader() {
+        val downloader = object : Downloader() {
             override fun execute(request: Request): Response {
                 val httpMethod = request.httpMethod()
                 val url = request.url()
@@ -57,7 +58,16 @@ object StreamResolver {
                     okResponse.request.url.toString()
                 )
             }
-        })
+        }
+        try {
+            NewPipe.init(downloader, Localization.DEFAULT)
+        } catch (e: Throwable) {
+            try {
+                NewPipe.init(downloader)
+            } catch (e2: Throwable) {
+                e2.printStackTrace()
+            }
+        }
         initialized = true
     }
 

@@ -22,6 +22,14 @@ class AccountRepository(context: Context) {
         get() = prefs.getString("account_name", null)
         set(value) = prefs.edit().putString("account_name", value).apply()
 
+    var customClientId: String?
+        get() = prefs.getString("custom_client_id", null)
+        set(value) = prefs.edit().putString("custom_client_id", value).apply()
+
+    var customClientSecret: String?
+        get() = prefs.getString("custom_client_secret", null)
+        set(value) = prefs.edit().putString("custom_client_secret", value).apply()
+
     val isLoggedIn: Boolean
         get() = !accessToken.isNullOrBlank() || !cookies.isNullOrBlank()
 
