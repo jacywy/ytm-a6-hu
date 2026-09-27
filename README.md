@@ -53,39 +53,29 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 * Powered by **`TeamNewPipe/NewPipeExtractor` (v0.26.5+)** with headless JS stream deciphering (handling `s` and `n` parameter transformations).
 * **Automated CI/CD Hot-Fix Workflow**: Whenever YouTube changes its backend encryption algorithms, you do not need an Android development environment on your PC. Simply change the version tag in `build.gradle` on the GitHub website, and GitHub Actions automatically compiles and releases a new APK within 3 minutes.
 
-### 4. Dedicated "Offline Music" Library & 100% Zero-Network Playback
-* **Permanent Video ID Cache Key**: Binds ExoPlayer's `customCacheKey` to the unique `videoId`.
-* **Pure Offline Decoding**: Fully cached songs can be played in underground parking garages or remote areas without internet or SIM cards. The player decodes directly from local disk (`SimpleCache`) without making any network requests.
-* **Dedicated Offline Section**: A prominent **"Offline Music"** card in the Library tab displays exact count of 100% cached songs, with direct track selection, "Play All", and "Shuffle" controls.
+### 4. Dedicated "Offline Music" Library & Zero-Network Playback
+* **Pure Offline Playback**: Cached songs play directly from local storage (`SimpleCache`) without cellular network or SIM cards.
+* **Offline Library**: Dedicated card in the Library tab showing total cached tracks, with track selection, "Play All", and "Shuffle" controls.
 
-### 5. Full-Track Background Preloading & Instant Switching
-* **Full-Song Pre-Caching**: While the current song is playing, a background coroutine pre-resolves the next track's URL and caches the **entire audio file** to local disk using ExoPlayer's `CacheWriter`.
-* **Deterministic Shuffle Candidate Preload**: In shuffle mode, the next random candidate is pre-selected and cached in advance so that skipping to the next track hits the local cache with **zero buffering lag**.
-* **Instant Audio Cutoff**: Skipping songs stops the previous audio immediately and shows buffering feedback, eliminating overlapping sounds.
+### 5. Full-Track Background Preloading
+* **Full-Song Pre-Caching**: While the current song is playing, a background coroutine pre-resolves the next track's URL and caches the audio stream to local disk.
+* **Deterministic Shuffle Candidate Preload**: In shuffle mode, the next random candidate is pre-selected and cached in advance for seamless, zero-buffer playback.
 
-### 6. Two-Tier Smart Cache Eviction & Custom Storage Limit
-* **User-Configurable Storage**: Choose between `200 MB`, `500 MB (Default)`, `1 GB`, `2 GB`, or `5 GB` directly from Settings.
-* **Two-Tier Eviction Algorithm (`trimCacheIfNeeded`)**:
-  - **Tier 1 (Fragment Purge)**: When storage limit is exceeded, incomplete/interrupted tracks (`isFullyCached == false`) are deleted first.
-  - **Tier 2 (LRU Protection)**: If space is still needed, the oldest played complete tracks are evicted by Least Recently Used (LRU) timestamp. Recently and currently playing tracks are protected.
-* **Incomplete Song Isolation**: Incomplete audio fragments are strictly excluded from the Offline list to prevent mid-song playback interruptions.
+### 6. Smart Cache Eviction & Custom Storage Limit
+* **Configurable Storage Limit**: Choose between `200 MB`, `500 MB (Default)`, `1 GB`, `2 GB`, or `5 GB` directly from Settings.
+* **LRU Eviction**: Automatically purges incomplete fragments first, then evicts the least recently played tracks when the storage threshold is reached.
 
-### 7. Thread-Safe Automotive Audio Focus & Navigation Ducking
-* **Main Thread Dispatch**: Audio focus changes are strictly dispatched to `Handler(Looper.getMainLooper())`, preventing `IllegalStateException: Player is accessed on the wrong thread` crashes on modern Android 12–14 and automotive ROMs.
-* **Navigation Voice Ducking (0.2f)**: When navigation apps (Amap, Baidu Maps, Google Maps) speak, CarYTM smoothly lowers music volume to 20% and restores to 100% when finished without stopping playback.
-* **Transient Call/Voice Interruption**: Automatically pauses on phone calls or voice messages, remembering state (`resumeOnFocusGain = true`), and automatically resumes playback when the call ends.
-* **Explicit Play/Pause State**: Prevents accidental playback inversion during background focus changes.
+### 7. Automotive Audio Focus & Navigation Ducking
+* **Navigation Voice Ducking (0.2f)**: When navigation apps (Amap, Baidu Maps, Google Maps) speak, music volume smoothly lowers to 20% and restores to 100% when finished.
+* **Call Interruption Handling**: Automatically pauses during incoming phone calls and smoothly resumes playback when the call ends.
 
 ### 8. Automotive Ergonomic UI & Hardware Integration
-* **Lightweight Native UI**: Pure **XML Layout + ViewBinding + RecyclerView** with memory footprint capped at **50 MB – 80 MB**, avoiding Jetpack Compose GC overhead on weak automotive chips.
-* **Landscape Ergonomics**: 130dp left rail navigation with dual-column touch cards designed for `1024×600` and `800×480` displays. Touch targets are `>= 48–56dp` for safe driving operation.
+* **Lightweight Native UI**: Pure **XML + ViewBinding + RecyclerView** with a memory footprint of only **50 MB – 80 MB**, avoiding GC overhead on legacy automotive chips.
+* **Landscape Ergonomics**: 130dp left rail navigation with dual-column cards designed for `1024×600` and `800×480` displays with large touch targets (`>= 48–56dp`).
 * **Steering Wheel Controls**: Full `MediaSessionCompat` and `MediaButtonReceiver` integration for steering wheel track skipping and play/pause buttons.
-* **Hardware Back Button Handling**: Physical and steering wheel back buttons navigate smoothly between playlist track lists and playlist grids.
 
-### 9. Full Bilingual Support (English & Simplified Chinese)
-* **Automatic Locale Detection**: Automatically adapts to the vehicle's system language on launch.
-* **In-App Language Switcher**: Independent language selector under **Settings** (`Follow System`, `简体中文`, `English`) allowing users to switch languages directly on Chinese or international head units without altering car firmware settings.
-* **Deep Automotive Compatibility**: Full dynamic locale updates across legacy Android 6.0 (API 23) up to modern Android 14.
+### 9. Bilingual Localization (English & Simplified Chinese)
+* **Automatic & Manual Switching**: Automatically adapts to vehicle system language, with an in-app language switcher under Settings (`Follow System`, `简体中文`, `English`).
 
 ---
 
@@ -190,39 +180,29 @@ This project is licensed under the [GPL-3.0 License](LICENSE).
 * 音频流解析全面接入全球维护最活跃的 **`TeamNewPipe/NewPipeExtractor`** 引擎（内置脱机 JS 虚拟机，解密 `s` 与 `n` 签名算法）。
 * **自动化云端打包流水线**：配置 GitHub Actions（`.github/workflows/build.yml`）。当 YouTube 协议发生变动时，只需在 GitHub 网页修改 `build.gradle` 中的版本号并提交，Actions 会在 **3 分钟内自动编译产出全新的 Release APK**，无需本地配置 Android 开发环境。
 
-### 4. 专属【本地离线音乐】曲库与 100% 脱网纯离线播放
-* **唯一 VideoId 缓存键绑定**：将 ExoPlayer 的 `customCacheKey` 与歌曲 `videoId` 强绑定。
-* **纯脱网本地解码**：完整下载/缓存的歌曲在进入长隧道、地下车库、偏远山区等**完全无信号、拔掉 SIM 卡**的环境下，播放器直接从磁盘 `SimpleCache` 寻址解码，**不请求 YouTube 接口，零网络消耗秒播**。
-* **离线专属管理专区**：歌单顶部常驻 **【本地离线音乐】** 卡片，实时显示完整离线曲目数。点击展开离线详情，支持查看歌曲列表、选择任意歌曲起播，以及一键“全部播放”与“随机播放”。
+### 4. 专属【本地离线音乐】曲库与脱网播放
+* **纯脱网本地解码**：已缓存的歌曲在无网络、无信号环境下直接从磁盘 `SimpleCache` 寻址解码，零网络消耗秒播。
+* **离线专属专区**：歌单顶部常驻【本地离线音乐】卡片，实时显示离线歌曲数，支持自由选曲、一键“全部播放”与“随机播放”。
 
-### 5. 全曲后台预缓存与即刻切歌
-* **全量流式预下载**：当前歌曲播放时，后台协程使用 `CacheWriter` 提前对下一首歌曲进行**全量音频流写入**。
-* **随机播放模式预选锁定**：随机播放下提前预测并下载锁定的下一首随机歌曲，切歌时实现**零等待无缝起播**。
-* **切歌即刻静音**：切换歌曲瞬间立即执行 `stop()` 并转入缓冲反馈，彻底消除上一首歌继续响导致的“没按成功”错觉。
+### 5. 全曲后台预缓存
+* **全量流式预下载**：当前歌曲播放时，后台协程使用 `CacheWriter` 提前对下一首歌曲进行全量音频流写入。
+* **随机播放提前预载**：随机模式下提前选定并缓存下一首随机歌曲，切歌时直接命中本地缓存无缝起播。
 
-### 6. 两级智能缓存淘汰机制与自定义容量
-* **自定义缓存上限**：设置页面提供 `200 MB`、`500 MB (默认)`、`1 GB`、`2 GB`、`5 GB` 单选调节与实时占用显示。
-* **智能两级淘汰策略 (`trimCacheIfNeeded`)**：
-  1. **第一优先级（清理碎片）**：空间不足时，自动将因中途跳歌、网络中断导致的未完整缓存音频块（`isFullyCached == false`）**优先彻底删除**；
-  2. **第二优先级（LRU 淘汰旧歌）**：碎片清理后若仍超限，才根据最近收听时间戳逐个淘汰最久未听的完整歌曲，**当前播放曲目与常听歌曲受到绝对保护**。
-* **碎片隔离保护**：未完全缓存的半拉歌曲绝不进入离线列表，杜绝离线听歌到一半卡死报错。
+### 6. 智能缓存管理与自定义容量
+* **自定义缓存上限**：设置页面提供 `200 MB`、`500 MB (默认)`、`1 GB`、`2 GB`、`5 GB` 档位调节与实时存储占用显示。
+* **LRU 淘汰机制**：存储超出上限时优先清理未完整下载的文件，并按最近播放时间淘汰最久未听的歌曲。
 
-### 7. 线程安全的车规级音频焦点管理与导航压音（Audio Focus & Ducking）
-* **主线程 Looper 强制派发**：所有音频焦点事件强制切换回 `Handler(Looper.getMainLooper())` 执行，彻底解决跨线程访问播放器引发的 `IllegalStateException: Player is accessed on the wrong thread` 闪退。
-* **导航语音平滑压音（Duck 0.2f）**：车载高德地图/百度地图语音播报时，音乐音量自动压低至 20%，播报完毕平滑恢复 100%，**行车听歌不中断**。
-* **电话与语音打断自动恢复**：接听车载电话或临时语音消息时，音乐安全暂停并标记状态，通话结束后**自动恢复播放**。
-* **明确的 `play()` / `pause()` 状态机**：杜绝因布尔值翻转错误在后台误起播。
+### 7. 车规级音频焦点管理与导航压音（Audio Focus & Ducking）
+* **导航语音平滑压音（Duck 0.2f）**：车载高德地图/百度地图语音播报时，音乐音量自动压低至 20%，播报完毕平滑恢复 100%，行车听歌不中断。
+* **电话打断自动恢复**：接听车载电话或临时语音消息时音乐安全暂停，通话结束后自动恢复播放。
 
 ### 8. 车载专属横屏交互与方控硬件融合
-* **极度轻量低功耗**：摒弃在老款车载芯片（全志 T3/瑞芯微 RK3188）上卡顿严重的 Jetpack Compose，采用纯原生 **XML + ViewBinding + RecyclerView**，常驻运行内存仅 **50MB~80MB**。
-* **横屏 Rail 导航**：左侧 130dp 固定导航 Rail，右侧双列大卡片布局。按键与条目高度全部设为 `>= 48–56dp`，颠簸路段不易误触。
-* **方向盘按键（方控）**：全面接入 `MediaSessionCompat` 与 `MediaButtonReceiver`，支持方向盘物理按键上一首、下一首、暂停/播放。
-* **物理返回键适配**：完美适配方向盘与中控返回键，从歌曲详情列表无缝回退至歌单网格。
+* **极度轻量低功耗**：采用原生 **XML + ViewBinding + RecyclerView**，常驻运行内存仅 **50MB~80MB**，在老款车载芯片上运行流畅。
+* **横屏 Rail 导航**：左侧 130dp 固定导航 Rail 与右侧双列大卡片布局，按键高度全部设为 `>= 48–56dp`，颠簸路段不易误触。
+* **方向盘按键（方控）**：全面接入 `MediaSessionCompat` 与 `MediaButtonReceiver`，支持方向盘物理按键上一首、下一首、暂停/播放与中控返回键。
 
 ### 9. 完整中英双语支持（中文 / 英文）
-* **自动跟随系统语言**：启动时自动识别并匹配车载系统的默认语言。
-* **应用内独立语言切换**：设置中心内置专属「界面语言」切换选项（跟随系统 / 简体中文 / English），即使车机为外语或定制固件也可自主切换。
-* **深度车规级兼容**：覆盖 Android 6.0（API 23）老款车机至 Android 14 现代车机，动态生效无需重启设备。
+* **跟随系统与应用内切换**：自动适配车载系统默认语言，并支持在设置中心独立切换（跟随系统 / 简体中文 / English）。
 
 ---
 
