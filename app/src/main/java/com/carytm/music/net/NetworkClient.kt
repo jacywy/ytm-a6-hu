@@ -50,12 +50,62 @@ object NetworkClient {
         builder.build()
     }
 
+    /**
+     * Dedicated clean client for NewPipeExtractor so internal client simulation (VisionOS, Android, etc.)
+     * and headers/cookies are not modified or overridden.
+     */
+    val extractorOkHttpClient: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+
+        try {
+            val tm = Conscrypt.getDefaultX509TrustManager()
+            val sslContext = SSLContext.getInstance("TLS", Conscrypt.newProvider())
+            sslContext.init(null, arrayOf(tm), null)
+            builder.sslSocketFactory(Conscrypt.newProvider().let { sslContext.socketFactory }, tm)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+        builder.build()
+    }
+
+    /**
+     * Dedicated clean client for ExoPlayer audio playback streaming directly from Googlevideo CDN.
+     */
+    val mediaOkHttpClient: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+
+        try {
+            val tm = Conscrypt.getDefaultX509TrustManager()
+            val sslContext = SSLContext.getInstance("TLS", Conscrypt.newProvider())
+            sslContext.init(null, arrayOf(tm), null)
+            builder.sslSocketFactory(Conscrypt.newProvider().let { sslContext.socketFactory }, tm)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+        builder.build()
+    }
+
     private class HeaderInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val original: Request = chain.request()
             val requestBuilder = original.newBuilder()
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0")
-                .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+
+            // Only inject default User-Agent if caller did not provide one
+            if (original.header("User-Agent").isNullOrBlank()) {
+                requestBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0")
+            }
+            if (original.header("Accept-Language").isNullOrBlank()) {
+                requestBuilder.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+            }
 
             // Only inject Authorization Bearer when explicitly requested (e.g. TV OAuth endpoints)
             if (original.header("X-Use-OAuth") == "true") {

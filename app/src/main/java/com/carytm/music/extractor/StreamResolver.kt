@@ -44,7 +44,7 @@ object StreamResolver {
                     reqBuilder.get()
                 }
 
-                val okResponse = NetworkClient.okHttpClient.newCall(reqBuilder.build()).execute()
+                val okResponse = NetworkClient.extractorOkHttpClient.newCall(reqBuilder.build()).execute()
                 val responseBody = okResponse.body?.string() ?: ""
                 val responseHeaders = mutableMapOf<String, List<String>>()
                 for (name in okResponse.headers.names()) {
@@ -85,21 +85,33 @@ object StreamResolver {
             extractor.fetchPage()
 
             val audioStreams: List<AudioStream> = extractor.audioStreams
-            if (audioStreams.isEmpty()) return@withContext null
+            if (audioStreams.isNotEmpty()) {
+                val selected = if (preferOpus) {
+                    audioStreams.firstOrNull { it.format?.id == 251 }
+                        ?: audioStreams.firstOrNull { it.format?.id == 140 }
+                        ?: audioStreams.maxByOrNull { it.averageBitrate }
+                } else {
+                    // Default M4A 128kbps (itag 140) for low CPU & battery consumption on car SoC
+                    audioStreams.firstOrNull { it.format?.id == 140 }
+                        ?: audioStreams.firstOrNull { it.format?.id == 251 }
+                        ?: audioStreams.maxByOrNull { it.averageBitrate }
+                }
 
-            // Select stream by preference
-            val selected = if (preferOpus) {
-                audioStreams.firstOrNull { it.format?.id == 251 }
-                    ?: audioStreams.firstOrNull { it.format?.id == 140 }
-                    ?: audioStreams.maxByOrNull { it.averageBitrate }
-            } else {
-                // Default M4A 128kbps (itag 140) for low CPU & battery consumption on car SoC
-                audioStreams.firstOrNull { it.format?.id == 140 }
-                    ?: audioStreams.firstOrNull { it.format?.id == 251 }
-                    ?: audioStreams.maxByOrNull { it.averageBitrate }
+                val url = selected?.content
+                if (!url.isNullOrBlank()) {
+                    return@withContext url
+                }
             }
 
-            return@withContext selected?.content
+            // Fallback: If separate audio streams are unavailable, use progressive video stream (e.g. 360p MP4)
+            // ExoPlayer will play the embedded AAC audio stream seamlessly.
+            val videoStreams = extractor.videoStreams
+            if (!videoStreams.isNullOrEmpty()) {
+                val fallbackVideo = videoStreams.firstOrNull { it.content?.isNotBlank() == true }
+                if (fallbackVideo != null) {
+                    return@withContext fallbackVideo.content
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

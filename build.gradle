@@ -7,5 +7,5 @@ plugins {
 ext {
     // NewPipeExtractor version: When YouTube updates encryption or protocols,
     // simply update this single line, commit to GitHub, and CI will build an updated APK.
-    newPipeExtractorVersion = "v0.24.4"
+    newPipeExtractorVersion = "v0.26.5"
 }

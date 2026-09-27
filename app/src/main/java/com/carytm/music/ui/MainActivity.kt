@@ -146,7 +146,11 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     override fun onProgressUpdate(currentMs: Long, totalMs: Long) {}
 
-    override fun onError(message: String) {}
+    override fun onError(message: String) {
+        runOnUiThread {
+            android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()

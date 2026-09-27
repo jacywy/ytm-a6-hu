@@ -13,6 +13,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
 import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
@@ -140,13 +141,13 @@ object MusicPlayer {
 
             exoPlayer?.let { player ->
                 val uri = Uri.parse(audioUrl)
-                val okHttpFactory = OkHttpDataSource.Factory(NetworkClient.okHttpClient)
+                val okHttpFactory = OkHttpDataSource.Factory(NetworkClient.mediaOkHttpClient)
                 val cacheFactory = CacheDataSource.Factory()
                     .setCache(simpleCache!!)
                     .setUpstreamDataSourceFactory(okHttpFactory)
                     .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
-                val mediaSource = ProgressiveMediaSource.Factory(cacheFactory)
+                val mediaSource = DefaultMediaSourceFactory(cacheFactory)
                     .createMediaSource(MediaItem.fromUri(uri))
 
                 player.setMediaSource(mediaSource)
