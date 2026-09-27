@@ -113,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">协议热维护说明</string>
-    <string name="settings_version_info">CarYTM v%s (API 23 车机专用版)</string>
+    <string name="settings_version_info">CarYTM v0.2.4 (API 23 车机专用版)</string>
     <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
 
     <!-- LAN Cookie Assistant -->
