@@ -87,7 +87,16 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         }
 
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("CarYTM", "准备就绪"))
+        val initialNotification = buildNotification("CarYTM", "准备就绪")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                initialNotification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, initialNotification)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -210,16 +219,37 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
+        val isPlaying = MusicPlayer.isPlaying()
+        val prevPendingIntent = androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
+            this,
+            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+        )
+        val playPausePendingIntent = androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
+            this,
+            if (isPlaying) PlaybackStateCompat.ACTION_PAUSE else PlaybackStateCompat.ACTION_PLAY
+        )
+        val nextPendingIntent = androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
+            this,
+            PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+        )
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(artist)
-            .setSmallIcon(R.drawable.ic_home)
+            .setSmallIcon(R.drawable.ic_launcher)
             .setContentIntent(pendingIntent)
-            .setOngoing(MusicPlayer.isPlaying())
+            .setOngoing(isPlaying)
+            .addAction(R.drawable.ic_prev, "上一首", prevPendingIntent)
+            .addAction(
+                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
+                if (isPlaying) "暂停" else "播放",
+                playPausePendingIntent
+            )
+            .addAction(R.drawable.ic_next, "下一首", nextPendingIntent)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
-                    .setShowActionsInCompactView(0)
+                    .setShowActionsInCompactView(0, 1, 2)
             )
 
         if (albumArt != null) {

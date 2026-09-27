@@ -35,6 +35,12 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+
         // Start playback background service with media session
         PlaybackService.start(this)
 
