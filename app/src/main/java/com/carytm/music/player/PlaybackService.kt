@@ -107,7 +107,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     private fun updateMetadataAndNotification(song: SongItem?) {
         val title = song?.title ?: "CarYTM"
         val artist = song?.artist ?: "正在播放"
-        val album = if (!song?.albumName.isNullOrBlank()) song.albumName else "YouTube Music"
+        val album = song?.albumName?.takeIf { it.isNotBlank() } ?: "YouTube Music"
 
         // Update MediaMetadataCompat for Car Dashboard, HUD, and Car Home Launchers
         val metadataBuilder = MediaMetadataCompat.Builder()
@@ -122,10 +122,11 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         nm.notify(NOTIFICATION_ID, buildNotification(title, artist, currentAlbumArt))
 
         // Asynchronously fetch album art bitmap for notification and car instrument cluster
-        if (!song?.thumbnailUrl.isNullOrBlank()) {
+        val thumbUrl = song?.thumbnailUrl
+        if (!thumbUrl.isNullOrBlank()) {
             Glide.with(applicationContext)
                 .asBitmap()
-                .load(song.thumbnailUrl)
+                .load(thumbUrl)
                 .into(object : CustomTarget<Bitmap>(256, 256) {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         currentAlbumArt = resource
