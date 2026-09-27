@@ -69,7 +69,7 @@ class LoginDialog(
 
         // Generate QR code pointing to https://www.google.com/device
         val bitmap = withContext(Dispatchers.Default) {
-            generateQrBitmap(response.verificationUrl, 400, 400)
+            generateQrBitmap(response.effectiveVerificationUrl, 400, 400)
         }
         ivQrCode.setImageBitmap(bitmap)
     }

@@ -5,10 +5,14 @@ import com.google.gson.annotations.SerializedName
 data class DeviceCodeResponse(
     @SerializedName("device_code") val deviceCode: String,
     @SerializedName("user_code") val userCode: String,
-    @SerializedName("verification_url") val verificationUrl: String,
+    @SerializedName("verification_url") val verificationUrl: String?,
+    @SerializedName("verification_uri") val verificationUri: String?,
     @SerializedName("expires_in") val expiresIn: Int,
     @SerializedName("interval") val interval: Int
-)
+) {
+    val effectiveVerificationUrl: String
+        get() = verificationUrl ?: verificationUri ?: "https://www.google.com/device"
+}
 
 data class TokenResponse(
     @SerializedName("access_token") val accessToken: String?,

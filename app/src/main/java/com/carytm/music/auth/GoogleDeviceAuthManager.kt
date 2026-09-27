@@ -1,13 +1,16 @@
 package com.carytm.music.auth
 
 import android.content.Context
+import android.util.Log
 import com.carytm.music.model.DeviceCodeResponse
 import com.carytm.music.model.TokenResponse
 import com.carytm.music.net.NetworkClient
 import com.google.gson.Gson
 import kotlinx.coroutines.*
-import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.UUID
 
 class GoogleDeviceAuthManager(private val context: Context) {
 
@@ -15,41 +18,46 @@ class GoogleDeviceAuthManager(private val context: Context) {
     private val accountRepo = AccountRepository(context)
     private var pollJob: Job? = null
 
-    // Standard YouTube on TV / Limited Input OAuth Client ID
-    // (Used broadly by SmartTube and open-source TV clients)
+    // YouTube on TV / Limited Input OAuth Client ID & Secret
     companion object {
-        const val CLIENT_ID = "861556708454-d6dlm3lh05dd8pvsklbp597qpo80rhuh.apps.googleusercontent.com"
-        const val CLIENT_SECRET = "S_g..._secret" // YouTube on TV public client secret or omitted if public
-        const val SCOPE = "https://www.googleapis.com/auth/youtube"
-        const val DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code"
-        const val TOKEN_URL = "https://oauth2.googleapis.com/token"
+        const val CLIENT_ID = "861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com"
+        const val CLIENT_SECRET = "SboVhoG9s0rNafixCSGGKXAT"
+        const val SCOPE = "http://gdata.youtube.com https://www.googleapis.com/auth/youtube"
+        const val DEVICE_CODE_URL = "https://www.youtube.com/o/oauth2/device/code"
+        const val TOKEN_URL = "https://www.youtube.com/o/oauth2/token"
     }
 
     private val effectiveClientId: String
         get() = accountRepo.customClientId?.takeIf { it.isNotBlank() } ?: CLIENT_ID
 
-    private val effectiveClientSecret: String?
-        get() = accountRepo.customClientSecret?.takeIf { it.isNotBlank() }
+    private val effectiveClientSecret: String
+        get() = accountRepo.customClientSecret?.takeIf { it.isNotBlank() } ?: CLIENT_SECRET
 
     suspend fun requestDeviceCode(): DeviceCodeResponse? = withContext(Dispatchers.IO) {
         try {
-            val formBuilder = FormBody.Builder()
-                .add("client_id", effectiveClientId)
-                .add("scope", SCOPE)
-            effectiveClientSecret?.let { formBuilder.add("client_secret", it) }
+            val payload = mapOf(
+                "client_id" to effectiveClientId,
+                "scope" to SCOPE,
+                "device_id" to UUID.randomUUID().toString().replace("-", "").take(16),
+                "device_model" to "ytlr::"
+            )
+            val jsonBody = gson.toJson(payload).toRequestBody("application/json; charset=utf-8".toMediaType())
 
             val request = Request.Builder()
                 .url(DEVICE_CODE_URL)
-                .post(formBuilder.build())
+                .post(jsonBody)
                 .build()
 
             val response = NetworkClient.okHttpClient.newCall(request).execute()
             val body = response.body?.string() ?: return@withContext null
             if (response.isSuccessful) {
                 return@withContext gson.fromJson(body, DeviceCodeResponse::class.java)
+            } else {
+                Log.e("CarYTM_Auth", "DeviceCode error: ${response.code} $body")
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Log.e("CarYTM_Auth", "requestDeviceCode exception: ${e.message}")
         }
         return@withContext null
     }
@@ -71,15 +79,17 @@ class GoogleDeviceAuthManager(private val context: Context) {
                 delay(interval)
 
                 try {
-                    val formBuilder = FormBody.Builder()
-                        .add("client_id", effectiveClientId)
-                        .add("device_code", deviceCode)
-                        .add("grant_type", "http://oauth.net/grant_type/device/1.0")
-                    effectiveClientSecret?.let { formBuilder.add("client_secret", it) }
+                    val payload = mapOf(
+                        "client_id" to effectiveClientId,
+                        "client_secret" to effectiveClientSecret,
+                        "code" to deviceCode,
+                        "grant_type" to "http://oauth.net/grant_type/device/1.0"
+                    )
+                    val jsonBody = gson.toJson(payload).toRequestBody("application/json; charset=utf-8".toMediaType())
 
                     val request = Request.Builder()
                         .url(TOKEN_URL)
-                        .post(formBuilder.build())
+                        .post(jsonBody)
                         .build()
 
                     val response = NetworkClient.okHttpClient.newCall(request).execute()
