@@ -14,3 +14,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.apk
+*.log
+*.tmp
+test_log*.txt
