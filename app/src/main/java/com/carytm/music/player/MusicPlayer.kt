@@ -332,6 +332,14 @@ object MusicPlayer {
         playCurrent()
     }
 
+    fun play() {
+        exoPlayer?.play()
+    }
+
+    fun pause() {
+        exoPlayer?.pause()
+    }
+
     fun togglePlayPause() {
         exoPlayer?.let {
             if (it.isPlaying) it.pause() else it.play()

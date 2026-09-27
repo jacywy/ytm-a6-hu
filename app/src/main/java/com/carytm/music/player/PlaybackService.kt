@@ -49,8 +49,8 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         // Initialize Car AudioFocus Manager with Ducking
         audioFocusManager = CarAudioFocusManager(
             context = this,
-            onPauseRequested = { MusicPlayer.togglePlayPause() },
-            onResumeRequested = { if (!MusicPlayer.isPlaying()) MusicPlayer.togglePlayPause() },
+            onPauseRequested = { MusicPlayer.pause() },
+            onResumeRequested = { MusicPlayer.play() },
             onDuckRequested = { vol -> MusicPlayer.setVolume(vol) }
         )
 
@@ -63,12 +63,12 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
                     if (audioFocusManager.requestAudioFocus()) {
-                        MusicPlayer.togglePlayPause()
+                        MusicPlayer.play()
                     }
                 }
 
                 override fun onPause() {
-                    MusicPlayer.togglePlayPause()
+                    MusicPlayer.pause()
                 }
 
                 override fun onSkipToNext() {
