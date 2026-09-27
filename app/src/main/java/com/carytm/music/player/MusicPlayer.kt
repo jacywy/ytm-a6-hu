@@ -36,6 +36,7 @@ object MusicPlayer {
     var preferOpus: Boolean = false
     var isShuffle: Boolean = false
         private set
+    private var nextShuffleIndex = -1
 
     private var isResolving = false
 
@@ -115,9 +116,6 @@ object MusicPlayer {
         }
     }
 
-    var isShuffle = false
-        private set
-    private var nextShuffleIndex = -1
 
     fun setShuffle(enabled: Boolean) {
         isShuffle = enabled
