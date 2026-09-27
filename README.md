@@ -43,7 +43,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
   1. Open CarYTM, display a QR code and an 8-character user code on the car display.
   2. Scan the QR code or visit `https://www.google.com/device` on your mobile phone or laptop.
   3. Authorize your account; the car head unit polls the token endpoint and automatically syncs your personal playlists, liked songs, and library. **Zero web pages are rendered on the car unit.**
-* **LAN Cookie Import**: Built-in lightweight HTTP server (`NanoHTTPD`). Connect your phone to the car's Wi-Fi hotspot and access `http://<car-ip>:8888` to paste and sync browser cookies instantly.
+* **LAN Cookie Import**: Built-in lightweight HTTP server (`NanoHTTPD`). Connect your phone to the car's Wi-Fi hotspot and access `http://<car-ip>:8888` to paste and sync browser cookies instantly with a bilingual web UI.
 
 ### 2. TLS 1.3 & Modern Cryptography on Android 6 (BoringSSL)
 * Ships with **Google Conscrypt (BoringSSL)** injected into the Security Provider on app launch.
@@ -56,7 +56,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 ### 4. Dedicated "Offline Music" Library & 100% Zero-Network Playback
 * **Permanent Video ID Cache Key**: Binds ExoPlayer's `customCacheKey` to the unique `videoId`.
 * **Pure Offline Decoding**: Fully cached songs can be played in underground parking garages or remote areas without internet or SIM cards. The player decodes directly from local disk (`SimpleCache`) without making any network requests.
-* **Dedicated Offline Section**: A prominent **"Offline Music" (本地离线音乐)** card in the Library tab displays exact count of 100% cached songs, with direct track selection, "Play All", and "Shuffle" controls.
+* **Dedicated Offline Section**: A prominent **"Offline Music"** card in the Library tab displays exact count of 100% cached songs, with direct track selection, "Play All", and "Shuffle" controls.
 
 ### 5. Full-Track Background Preloading & Instant Switching
 * **Full-Song Pre-Caching**: While the current song is playing, a background coroutine pre-resolves the next track's URL and caches the **entire audio file** to local disk using ExoPlayer's `CacheWriter`.
@@ -81,7 +81,11 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 * **Landscape Ergonomics**: 130dp left rail navigation with dual-column touch cards designed for `1024×600` and `800×480` displays. Touch targets are `>= 48–56dp` for safe driving operation.
 * **Steering Wheel Controls**: Full `MediaSessionCompat` and `MediaButtonReceiver` integration for steering wheel track skipping and play/pause buttons.
 * **Hardware Back Button Handling**: Physical and steering wheel back buttons navigate smoothly between playlist track lists and playlist grids.
-* **Full Bilingual Support**: Automatic locale detection (system default), plus an in-app language switcher under **Settings** (`Follow System`, `简体中文`, `English`) compatible from Android 6 to Android 14.
+
+### 9. Full Bilingual Support (English & Simplified Chinese)
+* **Automatic Locale Detection**: Automatically adapts to the vehicle's system language on launch.
+* **In-App Language Switcher**: Independent language selector under **Settings** (`Follow System`, `简体中文`, `English`) allowing users to switch languages directly on Chinese or international head units without altering car firmware settings.
+* **Deep Automotive Compatibility**: Full dynamic locale updates across legacy Android 6.0 (API 23) up to modern Android 14.
 
 ---
 
@@ -102,7 +106,7 @@ adb shell am start -n com.carytm.music/.ui.MainActivity
 ## 🔐 Login Instructions
 
 ### Method 1: Mobile QR Code / Google TV Code (Recommended)
-1. In CarYTM, go to **Library** or **Settings**, tap **"手机扫码 / TV 登录"**.
+1. In CarYTM, go to **Library** or **Settings**, tap **"Phone QR / TV Login"**.
 2. A QR code and an 8-letter code (e.g. `ABCD-EFGH`) will appear.
 3. Scan the QR code or navigate to `https://www.google.com/device` on your phone/PC browser.
 4. Enter the 8-letter code and grant permission to your Google account.
@@ -110,7 +114,7 @@ adb shell am start -n com.carytm.music/.ui.MainActivity
 
 ### Method 2: Local Wi-Fi Cookie Import (Fallback)
 1. Ensure your phone is connected to the same Wi-Fi or car hotspot.
-2. In CarYTM **Settings**, tap **"局域网 Cookie 导入"**.
+2. In CarYTM **Settings**, tap **"LAN Cookie Import"**.
 3. The prompt displays a URL like `http://192.168.43.1:8888`.
 4. Open this URL on your phone's browser, paste your YouTube cookies, and tap Submit.
 
@@ -146,10 +150,17 @@ CarYTM/
 │   │   │   ├── model/              # SongItem, PlaylistItem, AuthModels
 │   │   │   ├── net/                # Conscrypt TLS OkHttp clients & Innertube API
 │   │   │   ├── player/             # ExoPlayer, OfflineRepository, CarAudioFocusManager, PlaybackService
-│   │   │   └── ui/                 # Landscape Rail UI, Offline detail, PlayerActivity, Settings
-│   │   └── res/                    # 800x480 & 1024x600 layouts, High-contrast dark car theme
+│   │   │   ├── ui/                 # Landscape Rail UI, Offline detail, PlayerActivity, Settings
+│   │   │   └── util/               # LocaleHelper (multi-language dynamic switching)
+│   │   └── res/                    # Layouts, themes, values (en), values-zh, values-en
+│   └── proguard-rules.pro          # ProGuard rules for Conscrypt, ExoPlayer, NewPipe
 └── build.gradle                    # Top-level build file with centralized extractor version
 ```
+
+---
+
+## 📄 License
+This project is licensed under the [GPL-3.0 License](LICENSE).
 
 ---
 
@@ -163,19 +174,19 @@ CarYTM/
 
 ## 🌟 核心特色与技术攻坚
 
-### 1. 彻底移除 WebView 依赖：免 WebView 账号登录
+### 1. 彻底移除 WebView 依赖：免 WebView 账号登录（Google TV 设备码授权与局域网 Cookie 导入）
 * **痛点**：Android 6 的内置 WebView 冻结在 Chrome 44~53 内核且无法升级。访问 Google 登录页会被安全策略强行拦截（提示 *"This browser or app may not be secure"*）。
 * **方案**：采用类似 **SmartTube / Google TV 的 Device Code Flow（设备码授权）**：
   1. 车机屏幕自动生成专属二维码与 8 位大写授权码；
   2. 手机扫码直达 `https://www.google.com/device`，确认授权；
   3. 车机后台自动完成 Token 轮询并同步个人歌单、喜欢收藏与历史记录，**车机全程不加载任何网页**！
-* **局域网 Cookie 导入备选**：内置轻量 NanoHTTPD 服务，手机连接车机 Wi-Fi/热点后访问车机 IP（端口 8888）即可一键粘贴 Cookie 导入。
+* **局域网 Cookie 导入备选**：内置轻量 NanoHTTPD 服务，手机连接车机 Wi-Fi/热点后访问车机 IP（端口 8888）即可一键粘贴 Cookie 导入，支持中英双语网页提示。
 
-### 2. 补齐 TLS 1.3 与现代化证书信任链
+### 2. 补齐 TLS 1.3 与现代化证书信任链（Google Conscrypt / BoringSSL）
 * 底层集成 **Google Conscrypt (BoringSSL)** 引擎，在 App 启动时优先注入系统 Security Provider。
 * 为 Android 6.0 补全 **TLS 1.3** 协议栈及最新根证书库，彻底解决直接连接 Google/YouTube CDN 节点时的 `SSLHandshakeException`。
 
-### 3. 抗 YouTube 协议变动：解耦架构与 2 分钟极速自愈
+### 3. 抗 YouTube 协议变动：解耦架构与 2 分钟极速自愈（GitHub Actions 自动化编译）
 * 音频流解析全面接入全球维护最活跃的 **`TeamNewPipe/NewPipeExtractor`** 引擎（内置脱机 JS 虚拟机，解密 `s` 与 `n` 签名算法）。
 * **自动化云端打包流水线**：配置 GitHub Actions（`.github/workflows/build.yml`）。当 YouTube 协议发生变动时，只需在 GitHub 网页修改 `build.gradle` 中的版本号并提交，Actions 会在 **3 分钟内自动编译产出全新的 Release APK**，无需本地配置 Android 开发环境。
 
@@ -196,7 +207,7 @@ CarYTM/
   2. **第二优先级（LRU 淘汰旧歌）**：碎片清理后若仍超限，才根据最近收听时间戳逐个淘汰最久未听的完整歌曲，**当前播放曲目与常听歌曲受到绝对保护**。
 * **碎片隔离保护**：未完全缓存的半拉歌曲绝不进入离线列表，杜绝离线听歌到一半卡死报错。
 
-### 7. 线程安全的车规级音频焦点管理（Audio Focus）
+### 7. 线程安全的车规级音频焦点管理与导航压音（Audio Focus & Ducking）
 * **主线程 Looper 强制派发**：所有音频焦点事件强制切换回 `Handler(Looper.getMainLooper())` 执行，彻底解决跨线程访问播放器引发的 `IllegalStateException: Player is accessed on the wrong thread` 闪退。
 * **导航语音平滑压音（Duck 0.2f）**：车载高德地图/百度地图语音播报时，音乐音量自动压低至 20%，播报完毕平滑恢复 100%，**行车听歌不中断**。
 * **电话与语音打断自动恢复**：接听车载电话或临时语音消息时，音乐安全暂停并标记状态，通话结束后**自动恢复播放**。
@@ -207,7 +218,11 @@ CarYTM/
 * **横屏 Rail 导航**：左侧 130dp 固定导航 Rail，右侧双列大卡片布局。按键与条目高度全部设为 `>= 48–56dp`，颠簸路段不易误触。
 * **方向盘按键（方控）**：全面接入 `MediaSessionCompat` 与 `MediaButtonReceiver`，支持方向盘物理按键上一首、下一首、暂停/播放。
 * **物理返回键适配**：完美适配方向盘与中控返回键，从歌曲详情列表无缝回退至歌单网格。
-* **完整中英双语支持**：自动跟随车机系统语言；设置中心内置「界面语言」切换选项（跟随系统 / 简体中文 / English），全面兼容 Android 6 至 Android 14。
+
+### 9. 完整中英双语支持（中文 / 英文）
+* **自动跟随系统语言**：启动时自动识别并匹配车载系统的默认语言。
+* **应用内独立语言切换**：设置中心内置专属「界面语言」切换选项（跟随系统 / 简体中文 / English），即使车机为外语或定制固件也可自主切换。
+* **深度车规级兼容**：覆盖 Android 6.0（API 23）老款车机至 Android 14 现代车机，动态生效无需重启设备。
 
 ---
 
@@ -228,7 +243,7 @@ adb shell am start -n com.carytm.music/.ui.MainActivity
 ## 📱 账号登录指南
 
 ### 方式一：手机扫码 / TV 设备码（首选）
-1. 在车机打开 CarYTM，进入【歌单】或【设置】页面，点击【手机扫码 / TV 授权登录】；
+1. 在车机打开 CarYTM，进入【歌单】或【设置】页面，点击【手机扫码 / TV 登录】；
 2. 车机屏幕会展示专属二维码及 8 位大写字母代码（例如 `ABCD-EFGH`）；
 3. 手机扫码，或在手机浏览器中打开 `https://www.google.com/device`；
 4. 输入车机屏幕上的 8 位代码，选择 Google 账号点击授权；
@@ -254,6 +269,31 @@ adb shell am start -n com.carytm.music/.ui.MainActivity
    ```
 3. 在 GitHub 网页点击 **Commit changes**；
 4. GitHub Actions 会自动触发重新打包，3 分钟后在 Releases 或 Actions Artifacts 处即可下载最新可用版 APK！
+
+---
+
+## 📂 项目结构
+
+```
+CarYTM/
+├── .github/workflows/build.yml     # GitHub Actions 自动化 CI/CD 打包流水线
+├── app/
+│   ├── build.gradle                # 依赖项配置 (Conscrypt, ExoPlayer, NewPipe, Glide)
+│   ├── src/main/
+│   │   ├── AndroidManifest.xml     # 横屏车载配置、方控广播接收器、前台服务声明
+│   │   ├── java/com/carytm/music/
+│   │   │   ├── CarYtmApp.kt        # 应用入口与 Conscrypt TLS 1.3 优先注入
+│   │   │   ├── auth/               # Google TV 设备码授权与 NanoHTTPD Cookie 局域网同步
+│   │   │   ├── extractor/          # NewPipeExtractor 协议集成与音频流解析
+│   │   │   ├── model/              # 数据模型 (SongItem, PlaylistItem, AuthModels)
+│   │   │   ├── net/                # Conscrypt TLS OkHttp 客户端与 Innertube 接口封装
+│   │   │   ├── player/             # ExoPlayer、OfflineRepository、音频焦点与后台播放服务
+│   │   │   ├── ui/                 # 横屏 Rail 导航、离线曲库详情、播放器全屏界面、设置中心
+│   │   │   └── util/               # LocaleHelper (中英多语言动态切换辅助类)
+│   │   └── res/                    # 车载高对比度布局、主题样式、values (en)、values-zh、values-en
+│   └── proguard-rules.pro          # Conscrypt、ExoPlayer、NewPipe 混淆防劣化规则
+└── build.gradle                    # 顶层构建文件，统一集中管理 Extractor 协议引擎版本
+```
 
 ---
 
