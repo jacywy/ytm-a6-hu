@@ -51,14 +51,14 @@ class LoginDialog(
     }
 
     private fun loadDeviceCode() {
-        tvAuthStatus.text = "正在请求授权码..."
+        tvAuthStatus.text = context.getString(R.string.login_requesting_code)
         scope.launch {
             val response = authManager.requestDeviceCode()
             if (response != null) {
                 displayCodeAndQr(response)
                 startPolling(response)
             } else {
-                tvAuthStatus.text = "网络错误，无法连接 Google 授权端点"
+                tvAuthStatus.text = context.getString(R.string.login_network_error)
             }
         }
     }
@@ -88,7 +88,7 @@ class LoginDialog(
                 }
             },
             onError = { err ->
-                tvAuthStatus.text = "授权失败: $err"
+                tvAuthStatus.text = context.getString(R.string.login_failed_format, err)
             }
         )
     }

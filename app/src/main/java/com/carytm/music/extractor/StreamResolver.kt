@@ -138,7 +138,7 @@ object StreamResolver {
                         results.add(
                             SongItem(
                                 videoId = vid,
-                                title = item.name ?: "未知歌曲",
+                                title = item.name ?: "Unknown Track",
                                 artist = item.uploaderName ?: "YouTube",
                                 durationText = duration,
                                 durationSec = item.duration,
@@ -176,7 +176,7 @@ object StreamResolver {
                         results.add(
                             SongItem(
                                 videoId = vid,
-                                title = item.name ?: "未知歌曲",
+                                title = item.name ?: "Unknown Track",
                                 artist = item.uploaderName ?: "YouTube",
                                 durationText = duration,
                                 durationSec = item.duration,

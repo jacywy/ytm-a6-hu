@@ -117,7 +117,7 @@ object InnertubeApi {
         // 3. Fallback if songs still empty
         if (songs.isEmpty()) {
             try {
-                val fallbackSongs = StreamResolver.searchSongs("热门音乐")
+                val fallbackSongs = StreamResolver.searchSongs("Top Hits")
                 songs.addAll(fallbackSongs)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -135,19 +135,19 @@ object InnertubeApi {
         list.add(
             PlaylistItem(
                 playlistId = "LM",
-                title = "我喜欢的音乐 (Liked Songs)",
+                title = context.getString(R.string.liked_songs),
                 author = "YouTube Music",
                 thumbnailUrl = "",
-                songCountText = "点击播放"
+                songCountText = ""
             )
         )
         list.add(
             PlaylistItem(
                 playlistId = "WL",
-                title = "稍后观看 (Watch Later)",
+                title = if (java.util.Locale.getDefault().language == "zh") "稍后观看 (Watch Later)" else "Watch Later",
                 author = "YouTube",
                 thumbnailUrl = "",
-                songCountText = "点击播放"
+                songCountText = ""
             )
         )
 
@@ -167,7 +167,7 @@ object InnertubeApi {
                 val body = response.body?.string()
                 if (!body.isNullOrBlank()) {
                     val json = JsonParser.parseString(body).asJsonObject
-                    parseTvPlaylists(json, list)
+                    parseTvPlaylists(json, list, context.getString(R.string.my_playlists))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -263,7 +263,7 @@ object InnertubeApi {
         return@withContext list.distinctBy { it.videoId }
     }
 
-    private fun parseTvPlaylists(json: JsonObject, output: MutableList<PlaylistItem>) {
+    private fun parseTvPlaylists(json: JsonObject, output: MutableList<PlaylistItem>, authorName: String = "Playlists") {
         val plRegex = Regex("""(PL[a-zA-Z0-9_-]{10,}|RD[a-zA-Z0-9_-]{10,})""")
         fun findTabs(elem: JsonObject) {
             if (elem.has("tabRenderer")) {
@@ -277,7 +277,7 @@ object InnertubeApi {
                 val params = endpoint?.get("params")?.asString
 
                 val foundPl = if (params != null) plRegex.find(params)?.value else null
-                val playlistId = foundPl ?: if (title.contains("稍后观看")) "WL" else null
+                val playlistId = foundPl ?: if (title.contains("稍后观看") || title.contains("Watch Later", ignoreCase = true)) "WL" else null
 
                 val thumbnails = tab.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
                 var thumb = ""
@@ -285,14 +285,14 @@ object InnertubeApi {
                     thumb = thumbnails[thumbnails.size() - 1].asJsonObject.get("url")?.asString ?: ""
                 }
 
-                if (playlistId != null && title.isNotBlank() && title != "播放列表") {
+                if (playlistId != null && title.isNotBlank() && title != "播放列表" && !title.equals("Playlists", ignoreCase = true)) {
                     output.add(
                         PlaylistItem(
                             playlistId = playlistId,
                             title = title,
-                            author = "我的播放列表",
+                            author = authorName,
                             thumbnailUrl = thumb,
-                            songCountText = "已同步"
+                            songCountText = ""
                         )
                     )
                 }

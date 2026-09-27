@@ -21,8 +21,13 @@ import com.bumptech.glide.request.transition.Transition
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.ui.MainActivity
+import com.carytm.music.util.LocaleHelper
 
 class PlaybackService : Service(), MusicPlayer.PlaybackListener {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+    }
 
     private lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioFocusManager: CarAudioFocusManager
@@ -87,7 +92,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         }
 
         createNotificationChannel()
-        val initialNotification = buildNotification("CarYTM", "准备就绪")
+        val initialNotification = buildNotification("CarYTM", getString(R.string.now_playing))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
@@ -115,7 +120,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
 
     private fun updateMetadataAndNotification(song: SongItem?) {
         val title = song?.title ?: "CarYTM"
-        val artist = song?.artist ?: "正在播放"
+        val artist = song?.artist ?: getString(R.string.now_playing)
         val album = song?.albumName?.takeIf { it.isNotBlank() } ?: "YouTube Music"
 
         // Update MediaMetadataCompat for Car Dashboard, HUD, and Car Home Launchers
@@ -158,7 +163,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         }
         val song = MusicPlayer.getCurrentSong()
         val title = song?.title ?: "CarYTM"
-        val artist = song?.artist ?: "正在播放"
+        val artist = song?.artist ?: getString(R.string.now_playing)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildNotification(title, artist, currentAlbumArt))
     }
@@ -200,10 +205,10 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "CarYTM Playback",
+                getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "车机音乐后台播放服务"
+                description = getString(R.string.notification_channel_desc)
             }
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(channel)
@@ -239,13 +244,13 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOngoing(isPlaying)
-            .addAction(R.drawable.ic_prev, "上一首", prevPendingIntent)
+            .addAction(R.drawable.ic_prev, getString(R.string.notification_action_prev), prevPendingIntent)
             .addAction(
                 if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
-                if (isPlaying) "暂停" else "播放",
+                if (isPlaying) getString(R.string.notification_action_pause) else getString(R.string.notification_action_play),
                 playPausePendingIntent
             )
-            .addAction(R.drawable.ic_next, "下一首", nextPendingIntent)
+            .addAction(R.drawable.ic_next, getString(R.string.notification_action_next), nextPendingIntent)
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)

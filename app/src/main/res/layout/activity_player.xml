@@ -37,7 +37,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="返回列表"
+                android:text="@string/btn_back_to_list"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>

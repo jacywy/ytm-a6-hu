@@ -86,9 +86,9 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             if (list.isNotEmpty()) {
                 MusicPlayer.setShuffle(true)
                 MusicPlayer.playQueue(list.shuffled(), 0)
-                Toast.makeText(context, "开始随机播放本地离线音乐: ${list.size} 首歌曲", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.offline_quick_play_toast_format, list.size), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, "暂无完整离线歌曲，在线听歌时会自动完整缓存", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.offline_empty_toast), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -117,7 +117,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             if (currentTracks.isNotEmpty()) {
                 MusicPlayer.setShuffle(false)
                 MusicPlayer.playQueue(currentTracks, 0)
-                Toast.makeText(context, "开始顺序播放: ${currentTracks.size} 首歌曲", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.play_seq_toast_format, currentTracks.size), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -125,7 +125,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             if (currentTracks.isNotEmpty()) {
                 MusicPlayer.setShuffle(true)
                 MusicPlayer.playQueue(currentTracks.shuffled(), 0)
-                Toast.makeText(context, "开始随机播放: ${currentTracks.size} 首歌曲", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.play_shuffle_toast_format, currentTracks.size), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -143,7 +143,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         layoutPlaylistDetail.visibility = View.VISIBLE
 
         tvDetailTitle.text = playlist.title
-        tvDetailSubtitle.text = "${playlist.author} • 加载歌曲中..."
+        tvDetailSubtitle.text = "${playlist.author} • " + getString(R.string.loading_tracks)
         pbDetailLoading.visibility = View.VISIBLE
         tvDetailEmpty.visibility = View.GONE
         currentTracks.clear()
@@ -156,12 +156,12 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             if (tracks.isNotEmpty()) {
                 currentTracks.clear()
                 currentTracks.addAll(tracks)
-                tvDetailSubtitle.text = "${playlist.author} • 共 ${tracks.size} 首歌曲"
+                tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, tracks.size)
                 songAdapter.submitList(currentTracks)
                 songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
                 tvDetailEmpty.visibility = View.GONE
             } else {
-                tvDetailSubtitle.text = "${playlist.author} • 0 首歌曲"
+                tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, 0)
                 tvDetailEmpty.visibility = View.VISIBLE
             }
         }
@@ -200,7 +200,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     private fun showLoginDialog() {
         val dialog = LoginDialog(requireContext()) {
-            Toast.makeText(context, "登录成功，正在加载歌单...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.login_syncing_playlists_toast), Toast.LENGTH_SHORT).show()
             refreshData()
         }
         dialog.show()
@@ -210,7 +210,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         layoutPlaylistsContainer.visibility = View.GONE
         layoutPlaylistDetail.visibility = View.VISIBLE
 
-        tvDetailTitle.text = "本地离线音乐"
+        tvDetailTitle.text = getString(R.string.offline_title)
         pbDetailLoading.visibility = View.GONE
         loadTracksJob?.cancel()
 
@@ -218,14 +218,14 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         currentTracks.clear()
         if (list.isNotEmpty()) {
             currentTracks.addAll(list)
-            tvDetailSubtitle.text = "共 ${list.size} 首完整歌曲 • 无网络随时播放"
+            tvDetailSubtitle.text = getString(R.string.offline_detail_desc_format, list.size)
             tvDetailEmpty.visibility = View.GONE
             songAdapter.submitList(currentTracks)
             songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
         } else {
-            tvDetailSubtitle.text = "0 首歌曲"
+            tvDetailSubtitle.text = getString(R.string.tracks_count_simple, 0)
             tvDetailEmpty.visibility = View.VISIBLE
-            tvDetailEmpty.text = "暂无完整离线歌曲\n在线听歌时会自动在本地完整缓存"
+            tvDetailEmpty.text = getString(R.string.offline_empty_hint)
             songAdapter.submitList(emptyList())
         }
     }
@@ -233,7 +233,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
     private fun updateOfflineCardUI() {
         context?.let { ctx ->
             val count = OfflineRepository.getFullyCachedCount(ctx)
-            tvOfflineCount.text = "已完整缓存 $count 首歌曲 • 无网络可直接播放"
+            tvOfflineCount.text = getString(R.string.offline_card_desc_format, count)
         }
     }
 

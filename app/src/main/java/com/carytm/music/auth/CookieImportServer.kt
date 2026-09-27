@@ -19,12 +19,12 @@ class CookieImportServer(
                         <!DOCTYPE html>
                         <html>
                         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-                        <title>导入成功</title>
-                        <style>body{background:#121212;color:#fff;font-family:sans-serif;text-align:center;padding:40px;}</style>
+                        <title>Import Successful / 导入成功</title>
+                        <style>body{background:#121212;color:#fff;font-family:-apple-system,sans-serif;text-align:center;padding:40px;line-height:1.6;}</style>
                         </head>
                         <body>
-                            <h2 style="color:#4CAF50;">✓ Cookie 导入成功！</h2>
-                            <p>车机已同步您的 Cookie，正在刷新个人歌单。您可以关闭本页面了。</p>
+                            <h2 style="color:#4CAF50;">✓ Cookie Imported Successfully / 导入成功！</h2>
+                            <p>Car unit synchronized cookies and is updating playlists. You may close this page now.<br><span style="color:#888;">车机已同步您的 Cookie，正在刷新个人歌单。您可以关闭本页面了。</span></p>
                         </body>
                         </html>
                     """.trimIndent()
@@ -42,24 +42,26 @@ class CookieImportServer(
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>CarYTM - 导入 YouTube Music Cookie</title>
+                <title>CarYTM - Import YouTube Music Cookie</title>
                 <style>
-                    body { background: #121212; color: #fff; font-family: -apple-system, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; }
-                    h2 { color: #ff0000; }
+                    body { background: #121212; color: #fff; font-family: -apple-system, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; line-height: 1.5; }
+                    h2 { color: #ff0000; margin-bottom: 6px; }
+                    .sub { color: #aaa; font-size: 13px; margin-top: 0; }
                     textarea { width: 100%; height: 160px; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 10px; font-size: 14px; box-sizing: border-box; }
                     button { width: 100%; height: 50px; background: #ff0000; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer; }
-                    .note { color: #888; font-size: 13px; line-height: 1.5; margin-top: 15px; }
+                    .note { color: #888; font-size: 12px; line-height: 1.5; margin-top: 15px; border-top: 1px solid #282828; padding-top: 12px; }
                 </style>
             </head>
             <body>
-                <h2>CarYTM Cookie 导入助手</h2>
-                <p>将您在电脑或手机浏览器登录 YouTube Music 后获取的 Cookie 粘贴至下方：</p>
+                <h2>CarYTM Cookie Import Assistant</h2>
+                <p class="sub">Cookie 导入助手</p>
+                <p>Paste the YouTube Music Cookie from your browser below:<br><span style="color:#aaa; font-size:13px;">将您在浏览器登录 YouTube Music 后获取的 Cookie 粘贴至下方：</span></p>
                 <form method="POST">
-                    <textarea name="cookies" placeholder="粘贴 Cookie（如 SAPISID=...; SSID=...）" required></textarea>
-                    <button type="submit">一键发送到车机</button>
+                    <textarea name="cookies" placeholder="Paste Cookie here (e.g. SAPISID=...; SSID=...)" required></textarea>
+                    <button type="submit">Send to Car / 发送到车机</button>
                 </form>
                 <div class="note">
-                    <strong>提示：</strong>此服务仅在车机本地局域网（同一 Wi-Fi 或车机热点）运行，绝不上传到任何第三方服务器，保障账号绝对隐私安全。
+                    <strong>Security Notice / 安全提示:</strong> This service runs strictly within your local car network (same Wi-Fi or hotspot). No data is transmitted to external servers.<br>此服务仅在车机本地局域网运行，绝不上传到任何第三方服务器。
                 </div>
             </body>
             </html>

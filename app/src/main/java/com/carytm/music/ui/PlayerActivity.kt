@@ -1,5 +1,6 @@
 package com.carytm.music.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -12,8 +13,13 @@ import com.bumptech.glide.Glide
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.player.MusicPlayer
+import com.carytm.music.util.LocaleHelper
 
 class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+    }
 
     private lateinit var btnBack: View
     private lateinit var ivArtwork: ImageView
@@ -68,7 +74,7 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         btnShuffle.setOnClickListener {
             val enabled = MusicPlayer.toggleShuffle()
             updateShuffleUI(enabled)
-            val msg = if (enabled) "随机播放已开启" else "随机播放已关闭"
+            val msg = if (enabled) getString(R.string.shuffle_enabled_toast) else getString(R.string.shuffle_disabled_toast)
             android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
         }
 

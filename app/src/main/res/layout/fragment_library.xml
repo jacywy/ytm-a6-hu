@@ -42,7 +42,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="登录后可无缝同步您的 YouTube Music 收藏与个人歌单"
+                    android:text="@string/login_prompt_sync_hint"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
@@ -89,7 +89,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="本地离线音乐"
+                    android:text="@string/offline_title"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -99,7 +99,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="已完整缓存 0 首歌曲 • 无网络可直接播放"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -109,7 +108,7 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="44dp"
-                android:text="随机播放"
+                android:text="@string/btn_shuffle"
                 android:textColor="@color/primary"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -173,7 +172,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:text="返回"
+                    android:text="@string/btn_back"
                     android:textColor="@color/text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -193,7 +192,6 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:singleLine="true"
-                    android:text="歌单名称"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -204,7 +202,6 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:singleLine="true"
-                    android:text="0 首歌曲"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -215,7 +212,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="44dp"
                 android:backgroundTint="@color/primary"
-                android:text="全部播放"
+                android:text="@string/btn_play_all"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
 
@@ -226,7 +223,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="44dp"
                 android:layout_marginStart="8dp"
-                android:text="随机播放"
+                android:text="@string/btn_shuffle"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -248,7 +245,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="32dp"
-            android:text="歌单为空或解析失败"
+            android:text="@string/playlist_empty"
             android:textColor="@color/text_secondary"
             android:textSize="15sp"
             android:visibility="gone" />

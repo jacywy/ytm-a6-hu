@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Navigation -->
+    <string name="app_name">CarYTM</string>
+    <string name="nav_home">首页</string>
+    <string name="nav_library">歌单</string>
+    <string name="nav_search">搜索</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- Search -->
+    <string name="search_hint">搜索歌曲、歌手或专辑...</string>
+    <string name="search_empty">暂无搜索结果</string>
+    <string name="search_button">搜索</string>
+
+    <!-- Home -->
+    <string name="home_recommended">今日推荐</string>
+    <string name="home_charts">热门榜单</string>
+    <string name="my_playlists">我的播放列表</string>
+    <string name="liked_songs">我喜欢的音乐</string>
+    <string name="history">播放历史</string>
+
+    <!-- Account & Login -->
+    <string name="not_logged_in">未登录 Google 账号</string>
+    <string name="login_with_phone">手机扫码 / TV 授权登录</string>
+    <string name="login_dialog_title">连接 YouTube Music 账号</string>
+    <string name="login_dialog_desc">请使用手机扫描二维码，或访问 google.com/device 并输入以下 8 位授权码：</string>
+    <string name="login_qr_hint">手机微信/浏览器扫码</string>
+    <string name="login_visit_url_hint">或在手机访问网址：\nhttps://www.google.com/device</string>
+    <string name="login_enter_code_hint">在手机上输入此代码：</string>
+    <string name="login_cookie_title">备用方案：局域网 Cookie 导入</string>
+    <string name="login_cookie_desc">手机连接同局域网/车机热点，访问下述网址一键提交 Cookie：</string>
+    <string name="copy_link">复制链接</string>
+    <string name="login_requesting_code">正在请求授权码...</string>
+    <string name="login_network_error">网络错误，无法连接 Google 授权端点</string>
+    <string name="login_waiting">等待手机端授权中...</string>
+    <string name="login_success">登录成功！正在同步歌单</string>
+    <string name="login_failed">登录授权失败，请重试</string>
+    <string name="login_failed_format">授权失败: %s</string>
+    <string name="login_prompt_sync_hint">登录后可无缝同步您的 YouTube Music 收藏与个人歌单</string>
+    <string name="login_tv_success_toast">Google TV 授权成功！</string>
+    <string name="login_syncing_playlists_toast">登录成功，正在加载歌单...</string>
+
+    <!-- Playback & Controls -->
+    <string name="now_playing">正在播放</string>
+    <string name="empty_queue">播放队列为空</string>
+    <string name="playing_loading">正在解析并缓冲音频...</string>
+    <string name="play_error">播放失败，YouTube 协议可能已变动</string>
+    <string name="notification_channel_name">CarYTM 播放服务</string>
+    <string name="notification_channel_desc">车机音乐后台播放服务</string>
+    <string name="notification_action_prev">上一首</string>
+    <string name="notification_action_pause">暂停</string>
+    <string name="notification_action_play">播放</string>
+    <string name="notification_action_next">下一首</string>
+    <string name="btn_back_to_list">返回列表</string>
+    <string name="btn_back">返回</string>
+    <string name="btn_play_all">全部播放</string>
+    <string name="btn_shuffle">随机播放</string>
+    <string name="shuffle_enabled_toast">随机播放已开启</string>
+    <string name="shuffle_disabled_toast">随机播放已关闭</string>
+    <string name="play_seq_toast_format">开始顺序播放: %d 首歌曲</string>
+    <string name="play_shuffle_toast_format">开始随机播放: %d 首歌曲</string>
+    <string name="loading_tracks">加载歌曲中...</string>
+    <string name="tracks_count_format">%1$s • 共 %2$d 首歌曲</string>
+    <string name="tracks_count_simple">%d 首歌曲</string>
+    <string name="playlist_empty">歌单为空或解析失败</string>
+
+    <!-- Offline Music -->
+    <string name="offline_title">本地离线音乐</string>
+    <string name="offline_card_desc_format">已完整缓存 %d 首歌曲 • 无网络可直接播放</string>
+    <string name="offline_detail_desc_format">共 %d 首完整歌曲 • 无网络随时播放</string>
+    <string name="offline_empty_hint">暂无完整离线歌曲\n在线听歌时会自动在本地完整缓存</string>
+    <string name="offline_quick_play_toast_format">开始随机播放本地离线音乐: %d 首歌曲</string>
+    <string name="offline_empty_toast">暂无完整离线歌曲，在线听歌时会自动完整缓存</string>
+
+    <!-- Settings: Account -->
+    <string name="settings_title">车载设置</string>
+    <string name="settings_account_section">账号与同步</string>
+    <string name="settings_account_logged_in_format">已登录：%s</string>
+    <string name="settings_account_cookie_imported">Cookie 导入账号</string>
+    <string name="settings_account_tv_auth">Google TV 授权账号</string>
+    <string name="settings_login_btn">手机扫码 / TV 登录</string>
+    <string name="settings_cookie_btn">局域网 Cookie 导入</string>
+    <string name="settings_logout">退出登录</string>
+    <string name="settings_logout_toast">已退出当前账号</string>
+
+    <!-- Settings: Audio -->
+    <string name="settings_audio_quality">音频流偏好</string>
+    <string name="settings_audio_quality_m4a">M4A 128kbps (推荐：极省流量与 CPU，适合行车弱网)</string>
+    <string name="settings_audio_quality_opus">OPUS 160kbps (高保真音质)</string>
+
+    <!-- Settings: Cache -->
+    <string name="settings_cache">本地存储与缓存</string>
+    <string name="settings_cache_size_format">本地音频缓存：已占用 %.1f MB (上限 %d MB)</string>
+    <string name="settings_btn_adjust_limit">调整上限</string>
+    <string name="settings_btn_clear_cache">清空缓存</string>
+    <string name="settings_cache_dialog_title">选择本地音频缓存上限</string>
+    <string name="settings_cache_limit_set_toast">已设置缓存上限为 %s</string>
+    <string name="settings_cache_cleared_toast">本地缓存已清空</string>
+
+    <!-- Settings: Language -->
+    <string name="settings_language_section">界面语言</string>
+    <string name="settings_language_title">选择语言</string>
+    <string name="lang_current_format">当前语言：%s</string>
+    <string name="settings_btn_switch_language">切换语言</string>
+    <string name="lang_system">跟随系统</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_en">English</string>
+    <string name="lang_changed_toast">语言已切换</string>
+
+    <!-- Settings: Maintenance & Protocol -->
+    <string name="settings_maintenance_section">协议热维护说明</string>
+    <string name="settings_version_info">CarYTM v1.0.0 (API 23 车机专用版)</string>
+    <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
+
+    <!-- LAN Cookie Assistant -->
+    <string name="cookie_server_title">局域网 Cookie 导入助手</string>
+    <string name="cookie_server_msg_format">请在手机连接同 Wi-Fi 或车机热点后，使用手机浏览器访问：\n\nhttp://%s:8888\n\n在打开的网页中粘贴 Cookie 即可瞬间同步车机。</string>
+    <string name="cookie_server_start_failed">启动服务失败: %s</string>
+    <string name="cookie_saved_toast">Cookie 导入成功并已保存！</string>
+
+    <!-- General Dialog Buttons -->
+    <string name="btn_cancel">取消</string>
+    <string name="btn_confirm">确定</string>
+</resources>

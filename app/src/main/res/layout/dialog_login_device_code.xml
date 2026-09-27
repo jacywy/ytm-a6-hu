@@ -25,7 +25,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="手机微信/浏览器扫码"
+            android:text="@string/login_qr_hint"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
     </LinearLayout>
@@ -51,7 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="或在手机访问网址：\nhttps://www.google.com/device"
+            android:text="@string/login_visit_url_hint"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="在手机上输入此代码："
+            android:text="@string/login_enter_code_hint"
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
@@ -110,7 +110,7 @@
             android:layout_height="44dp"
             android:layout_gravity="end"
             android:layout_marginTop="8dp"
-            android:text="取消"
+            android:text="@string/btn_cancel"
             android:textColor="@color/text_secondary" />
 
     </LinearLayout>

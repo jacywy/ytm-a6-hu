@@ -1,5 +1,6 @@
 package com.carytm.music.ui
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -13,8 +14,13 @@ import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.player.MusicPlayer
 import com.carytm.music.player.PlaybackService
+import com.carytm.music.util.LocaleHelper
 
 class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+    }
 
     private lateinit var navBtnHome: View
     private lateinit var navBtnLibrary: View

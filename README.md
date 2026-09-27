@@ -81,6 +81,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 * **Landscape Ergonomics**: 130dp left rail navigation with dual-column touch cards designed for `1024×600` and `800×480` displays. Touch targets are `>= 48–56dp` for safe driving operation.
 * **Steering Wheel Controls**: Full `MediaSessionCompat` and `MediaButtonReceiver` integration for steering wheel track skipping and play/pause buttons.
 * **Hardware Back Button Handling**: Physical and steering wheel back buttons navigate smoothly between playlist track lists and playlist grids.
+* **Full Bilingual Support**: Automatic locale detection (system default), plus an in-app language switcher under **Settings** (`Follow System`, `简体中文`, `English`) compatible from Android 6 to Android 14.
 
 ---
 
@@ -88,7 +89,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 
 ### Download Pre-built APKs
 Download the latest APK release from the [GitHub Releases](https://github.com/jacywy/ytm-a6-hu/releases) page:
-- **Latest Release**: [v0.2.2 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.2/app-debug.apk)
+- **Latest Release**: [v0.2.3 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.3/app-debug.apk)
 
 ### Install via ADB (USB or Wi-Fi)
 ```bash
@@ -206,6 +207,7 @@ CarYTM/
 * **横屏 Rail 导航**：左侧 130dp 固定导航 Rail，右侧双列大卡片布局。按键与条目高度全部设为 `>= 48–56dp`，颠簸路段不易误触。
 * **方向盘按键（方控）**：全面接入 `MediaSessionCompat` 与 `MediaButtonReceiver`，支持方向盘物理按键上一首、下一首、暂停/播放。
 * **物理返回键适配**：完美适配方向盘与中控返回键，从歌曲详情列表无缝回退至歌单网格。
+* **完整中英双语支持**：自动跟随车机系统语言；设置中心内置「界面语言」切换选项（跟随系统 / 简体中文 / English），全面兼容 Android 6 至 Android 14。
 
 ---
 
@@ -213,7 +215,7 @@ CarYTM/
 
 ### 预编译 APK 下载
 进入本仓库的 [Releases](https://github.com/jacywy/ytm-a6-hu/releases) 页面下载最新构建：
-- **最新正式版本**：[v0.2.2 - app-debug.apk (21.49 MB)](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.2/app-debug.apk)
+- **最新正式版本**：[v0.2.3 - app-debug.apk](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.3/app-debug.apk)
 
 ### 命令行安装
 ```bash

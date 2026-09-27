@@ -100,7 +100,7 @@ class GoogleDeviceAuthManager(private val context: Context) {
                         if (response.isSuccessful && !tokenResponse.accessToken.isNullOrEmpty()) {
                             accountRepo.accessToken = tokenResponse.accessToken
                             accountRepo.refreshToken = tokenResponse.refreshToken
-                            accountRepo.accountName = "Google 账号 (已授权)"
+                            accountRepo.accountName = "Google Account"
                             withContext(Dispatchers.Main) {
                                 onSuccess(tokenResponse)
                             }
@@ -113,7 +113,7 @@ class GoogleDeviceAuthManager(private val context: Context) {
                             continue
                         } else {
                             withContext(Dispatchers.Main) {
-                                onError(tokenResponse.error ?: "授权失败")
+                                onError(tokenResponse.error ?: "Authorization failed")
                             }
                             break
                         }

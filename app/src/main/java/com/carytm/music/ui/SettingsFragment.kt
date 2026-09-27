@@ -2,7 +2,6 @@ package com.carytm.music.ui
 
 import android.app.AlertDialog
 import android.content.Context
-import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +12,7 @@ import com.carytm.music.R
 import com.carytm.music.auth.AccountRepository
 import com.carytm.music.auth.CookieImportServer
 import com.carytm.music.player.MusicPlayer
+import com.carytm.music.util.LocaleHelper
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -28,6 +28,8 @@ class SettingsFragment : Fragment() {
     private lateinit var tvCacheSize: TextView
     private lateinit var btnSetCacheSize: Button
     private lateinit var btnClearCache: Button
+    private lateinit var tvLanguage: TextView
+    private lateinit var btnLanguage: Button
 
     private var cookieServer: CookieImportServer? = null
 
@@ -43,14 +45,17 @@ class SettingsFragment : Fragment() {
         tvCacheSize = view.findViewById(R.id.tv_cache_size)
         btnSetCacheSize = view.findViewById(R.id.btn_set_cache_size)
         btnClearCache = view.findViewById(R.id.btn_clear_cache)
+        tvLanguage = view.findViewById(R.id.tv_settings_language)
+        btnLanguage = view.findViewById(R.id.btn_settings_language)
 
         updateAccountUI()
         updateCacheUI()
+        updateLanguageUI()
 
         btnLogin.setOnClickListener {
             val dialog = LoginDialog(requireContext()) {
                 updateAccountUI()
-                Toast.makeText(context, "Google TV 授权成功！", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, getString(R.string.login_tv_success_toast), Toast.LENGTH_SHORT).show()
             }
             dialog.show()
         }
@@ -63,33 +68,37 @@ class SettingsFragment : Fragment() {
             val repo = AccountRepository(requireContext())
             repo.clear()
             updateAccountUI()
-            Toast.makeText(context, "已退出当前账号", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.settings_logout_toast), Toast.LENGTH_SHORT).show()
         }
 
         btnSetCacheSize.setOnClickListener {
             val sizes = arrayOf(200, 500, 1024, 2048, 5120)
-            val labels = arrayOf("200 MB", "500 MB (默认)", "1024 MB (1 GB)", "2048 MB (2 GB)", "5120 MB (5 GB)")
+            val labels = arrayOf("200 MB", "500 MB", "1024 MB (1 GB)", "2048 MB (2 GB)", "5120 MB (5 GB)")
             val currentLimit = MusicPlayer.getCacheLimitMb(requireContext())
             var selectedIndex = sizes.indexOf(currentLimit)
             if (selectedIndex < 0) selectedIndex = 1
 
             AlertDialog.Builder(requireContext(), R.style.Theme_CarYTM_Dialog)
-                .setTitle("选择本地音频缓存上限")
+                .setTitle(getString(R.string.settings_cache_dialog_title))
                 .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
                     val chosenMb = sizes[which]
                     MusicPlayer.setCacheLimitMb(requireContext(), chosenMb)
                     updateCacheUI()
-                    Toast.makeText(context, "已设置缓存上限为 ${labels[which]}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, getString(R.string.settings_cache_limit_set_toast, labels[which]), Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.btn_cancel), null)
                 .show()
         }
 
         btnClearCache.setOnClickListener {
             MusicPlayer.clearCache(requireContext())
             updateCacheUI()
-            Toast.makeText(context, "本地缓存已清空", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.settings_cache_cleared_toast), Toast.LENGTH_SHORT).show()
+        }
+
+        btnLanguage.setOnClickListener {
+            showLanguageDialog()
         }
 
         rgAudioQuality.setOnCheckedChangeListener { _, checkedId ->
@@ -102,21 +111,60 @@ class SettingsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         updateCacheUI()
+        updateLanguageUI()
+    }
+
+    private fun showLanguageDialog() {
+        val langCodes = arrayOf(LocaleHelper.LANG_SYSTEM, LocaleHelper.LANG_ZH, LocaleHelper.LANG_EN)
+        val langLabels = arrayOf(
+            getString(R.string.lang_system),
+            getString(R.string.lang_zh),
+            getString(R.string.lang_en)
+        )
+        val currentCode = LocaleHelper.getSavedLanguageCode(requireContext())
+        var selectedIndex = langCodes.indexOf(currentCode)
+        if (selectedIndex < 0) selectedIndex = 0
+
+        AlertDialog.Builder(requireContext(), R.style.Theme_CarYTM_Dialog)
+            .setTitle(getString(R.string.settings_language_title))
+            .setSingleChoiceItems(langLabels, selectedIndex) { dialog, which ->
+                val chosenCode = langCodes[which]
+                if (chosenCode != currentCode) {
+                    LocaleHelper.setLanguage(requireContext(), chosenCode)
+                    Toast.makeText(context, getString(R.string.lang_changed_toast), Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                    requireActivity().recreate()
+                } else {
+                    dialog.dismiss()
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun updateLanguageUI() {
+        val currentCode = LocaleHelper.getSavedLanguageCode(requireContext())
+        val name = when (currentCode) {
+            LocaleHelper.LANG_ZH -> getString(R.string.lang_zh)
+            LocaleHelper.LANG_EN -> getString(R.string.lang_en)
+            else -> getString(R.string.lang_system)
+        }
+        tvLanguage.text = getString(R.string.lang_current_format, name)
     }
 
     private fun updateCacheUI() {
         context?.let { ctx ->
             val used = MusicPlayer.getUsedCacheSizeMb()
             val limit = MusicPlayer.getCacheLimitMb(ctx)
-            tvCacheSize.text = String.format("本地音频缓存：已占用 %.1f MB (上限 %d MB)", used, limit)
+            tvCacheSize.text = getString(R.string.settings_cache_size_format, used, limit)
         }
     }
 
     private fun updateAccountUI() {
         val repo = AccountRepository(requireContext())
         if (repo.isLoggedIn) {
-            val name = repo.accountName ?: (if (!repo.cookies.isNullOrBlank()) "Cookie 导入账号" else "Google TV 授权账号")
-            tvAccountStatus.text = "已登录：$name"
+            val name = repo.accountName ?: (if (!repo.cookies.isNullOrBlank()) getString(R.string.settings_account_cookie_imported) else getString(R.string.settings_account_tv_auth))
+            tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, name)
             btnLogout.visibility = View.VISIBLE
         } else {
             tvAccountStatus.text = getString(R.string.not_logged_in)
@@ -131,22 +179,22 @@ class SettingsFragment : Fragment() {
                 activity?.runOnUiThread {
                     val repo = AccountRepository(requireContext())
                     repo.cookies = newCookies
-                    repo.accountName = "Cookie 登录账号"
+                    repo.accountName = getString(R.string.settings_account_cookie_imported)
                     updateAccountUI()
-                    Toast.makeText(context, "Cookie 导入成功并已保存！", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, getString(R.string.cookie_saved_toast), Toast.LENGTH_LONG).show()
                 }
             }
             cookieServer?.start()
 
             val ip = getIpAddress() ?: "192.168.43.1"
             AlertDialog.Builder(requireContext(), R.style.Theme_CarYTM_Dialog)
-                .setTitle("局域网 Cookie 导入助手")
-                .setMessage("请在手机连接同 Wi-Fi 或车机热点后，使用手机浏览器访问：\n\nhttp://$ip:8888\n\n在打开的网页中粘贴 Cookie 即可瞬间同步车机。")
-                .setPositiveButton("确定", null)
+                .setTitle(getString(R.string.cookie_server_title))
+                .setMessage(getString(R.string.cookie_server_msg_format, ip))
+                .setPositiveButton(getString(R.string.btn_confirm), null)
                 .show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "启动服务失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.cookie_server_start_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 

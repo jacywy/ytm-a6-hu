@@ -111,7 +111,7 @@ object MusicPlayer {
                     }
                     return
                 }
-                listeners.forEach { it.onError(error.message ?: "播放失败，YouTube 协议可能已变动") }
+                listeners.forEach { it.onError(error.message ?: (appContext?.getString(R.string.play_error) ?: "Playback failed")) }
             }
         })
 
@@ -217,7 +217,7 @@ object MusicPlayer {
             if (audioUrl.isNullOrBlank()) {
                 listeners.forEach {
                     it.onBuffering(false)
-                    it.onError("无法解析音频流，请检查网络")
+                    it.onError(appContext?.getString(R.string.play_error) ?: "Cannot resolve audio stream")
                 }
                 return@launch
             }
