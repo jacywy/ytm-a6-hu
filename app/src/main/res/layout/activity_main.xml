@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/background">
+
+    <!-- Left Navigation Rail for Car Landscape -->
+    <LinearLayout
+        android:id="@+id/nav_rail"
+        android:layout_width="@dimen/nav_rail_width"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/nav_rail_bg"
+        android:padding="8dp">
+
+        <!-- App Brand -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CarYTM"
+            android:textColor="@color/primary"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp" />
+
+        <!-- Nav Item: Home -->
+        <LinearLayout
+            android:id="@+id/nav_btn_home"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/nav_item_height"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="@drawable/bg_nav_item_selected"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_home"
+                app:tint="@color/text_primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/nav_home"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_size_subtitle"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Nav Item: Library / Playlists -->
+        <LinearLayout
+            android:id="@+id/nav_btn_library"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/nav_item_height"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_library"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/nav_library"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_subtitle" />
+        </LinearLayout>
+
+        <!-- Nav Item: Search -->
+        <LinearLayout
+            android:id="@+id/nav_btn_search"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/nav_item_height"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_search"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/nav_search"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_subtitle" />
+        </LinearLayout>
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Nav Item: Settings -->
+        <LinearLayout
+            android:id="@+id/nav_btn_settings"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/nav_item_height"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/nav_settings"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_subtitle" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Main Content Body -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Fragment Container -->
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Bottom Persistent Mini-Player -->
+        <LinearLayout
+            android:id="@+id/mini_player_container"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/mini_player_height"
+            android:background="@drawable/bg_mini_player"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <!-- Album Art -->
+            <ImageView
+                android:id="@+id/mini_album_art"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_music_placeholder" />
+
+            <!-- Track Info -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/mini_song_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:singleLine="true"
+                    android:text="@string/empty_queue"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_size_title"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/mini_artist_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="@string/app_name"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_subtitle" />
+            </LinearLayout>
+
+            <!-- Previous Button -->
+            <ImageButton
+                android:id="@+id/mini_btn_prev"
+                android:layout_width="@dimen/car_button_size"
+                android:layout_height="@dimen/car_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_prev"
+                app:tint="@color/text_primary" />
+
+            <!-- Play/Pause Button -->
+            <ImageButton
+                android:id="@+id/mini_btn_play_pause"
+                android:layout_width="@dimen/car_button_size"
+                android:layout_height="@dimen/car_button_size"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_play"
+                app:tint="@color/primary" />
+
+            <!-- Next Button -->
+            <ImageButton
+                android:id="@+id/mini_btn_next"
+                android:layout_width="@dimen/car_button_size"
+                android:layout_height="@dimen/car_button_size"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_next"
+                app:tint="@color/text_primary" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

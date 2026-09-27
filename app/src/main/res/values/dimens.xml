@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Car touch sizes -->
+    <dimen name="nav_rail_width">130dp</dimen>
+    <dimen name="nav_item_height">56dp</dimen>
+    <dimen name="mini_player_height">64dp</dimen>
+
+    <dimen name="car_button_size">56dp</dimen>
+    <dimen name="car_button_large">72dp</dimen>
+
+    <dimen name="card_album_size">120dp</dimen>
+    <dimen name="card_corner_radius">10dp</dimen>
+
+    <dimen name="text_size_title">18sp</dimen>
+    <dimen name="text_size_subtitle">14sp</dimen>
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_player_title">22sp</dimen>
+    <dimen name="text_size_player_artist">16sp</dimen>
+
+    <dimen name="spacing_small">6dp</dimen>
+    <dimen name="spacing_medium">12dp</dimen>
+    <dimen name="spacing_large">18dp</dimen>
+</resources>

@@ -1,0 +1,63 @@
+name: Build CarYTM APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      extractor_version:
+        description: 'NewPipeExtractor version (leave blank to use build.gradle default)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Override Extractor Version (Optional)
+      if: ${{ github.event.inputs.extractor_version != '' }}
+      run: |
+        sed -i 's/newPipeExtractorVersion = ".*"/newPipeExtractorVersion = "${{ github.event.inputs.extractor_version }}"/' build.gradle
+        echo "Updated NewPipeExtractor to ${{ github.event.inputs.extractor_version }}"
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew || true
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Build Debug & Release APK
+      run: ./gradlew assembleDebug --stacktrace
+
+    - name: Upload Debug APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CarYTM-debug-apk
+        path: app/build/outputs/apk/debug/*.apk
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: app/build/outputs/apk/debug/*.apk
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

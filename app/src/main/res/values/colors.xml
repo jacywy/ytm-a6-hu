@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF0000</color>
+    <color name="primary_dark">#CC0000</color>
+    <color name="primary_light">#FF4D4D</color>
+    <color name="accent">#FF0033</color>
+
+    <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="surface_variant">#282828</color>
+    <color name="surface_card">#222222</color>
+    <color name="divider">#333333</color>
+
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#BBBBBB</color>
+    <color name="text_muted">#777777</color>
+
+    <color name="nav_rail_bg">#181818</color>
+    <color name="nav_rail_selected">#383838</color>
+    <color name="mini_player_bg">#1A1A1A</color>
+
+    <color name="status_green">#4CAF50</color>
+</resources>

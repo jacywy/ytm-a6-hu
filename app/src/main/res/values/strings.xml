@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CarYTM</string>
+    <string name="nav_home">首页</string>
+    <string name="nav_library">歌单</string>
+    <string name="nav_search">搜索</string>
+    <string name="nav_settings">设置</string>
+
+    <string name="search_hint">搜索歌曲、歌手或专辑...</string>
+    <string name="search_empty">暂无搜索结果</string>
+    <string name="search_button">搜索</string>
+
+    <string name="home_recommended">今日推荐</string>
+    <string name="home_charts">热门榜单</string>
+    <string name="my_playlists">我的播放列表</string>
+    <string name="liked_songs">我喜欢的音乐</string>
+    <string name="history">播放历史</string>
+
+    <string name="not_logged_in">未登录 Google 账号</string>
+    <string name="login_with_phone">手机扫码 / TV 授权登录</string>
+    <string name="login_dialog_title">连接 YouTube Music 账号</string>
+    <string name="login_dialog_desc">请使用手机扫描二维码，或访问 google.com/device 并输入以下 8 位授权码：</string>
+    <string name="login_cookie_title">备用方案：局域网 Cookie 导入</string>
+    <string name="login_cookie_desc">手机连接同局域网/车机热点，访问下述网址一键提交 Cookie：</string>
+    <string name="copy_link">复制链接</string>
+    <string name="login_waiting">等待手机端授权中...</string>
+    <string name="login_success">登录成功！正在同步歌单</string>
+    <string name="login_failed">登录授权失败，请重试</string>
+
+    <string name="now_playing">正在播放</string>
+    <string name="empty_queue">播放队列为空</string>
+    <string name="playing_loading">正在解析并缓冲音频...</string>
+    <string name="play_error">播放失败，YouTube 协议可能已变动</string>
+
+    <string name="settings_title">车载设置</string>
+    <string name="settings_audio_quality">音频流偏好</string>
+    <string name="settings_audio_quality_m4a">M4A 128kbps (节省流量与 CPU)</string>
+    <string name="settings_audio_quality_opus">OPUS 160kbps (高音质)</string>
+    <string name="settings_cache">本地缓存设置</string>
+    <string name="settings_cache_clear">清理本地缓存 (500MB 限制)</string>
+    <string name="settings_about">关于与协议更新</string>
+    <string name="settings_version_info">CarYTM v1.0.0 (API 23 Car Special Edition)</string>
+    <string name="settings_account_logged_in">已登录账号：</string>
+    <string name="settings_logout">退出登录</string>
+</resources>
