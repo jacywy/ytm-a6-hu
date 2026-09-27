@@ -25,6 +25,8 @@ class SettingsFragment : Fragment() {
     private lateinit var rgAudioQuality: RadioGroup
     private lateinit var rbM4a: RadioButton
     private lateinit var rbOpus: RadioButton
+    private lateinit var tvCacheSize: TextView
+    private lateinit var btnSetCacheSize: Button
     private lateinit var btnClearCache: Button
 
     private var cookieServer: CookieImportServer? = null
@@ -38,9 +40,12 @@ class SettingsFragment : Fragment() {
         rgAudioQuality = view.findViewById(R.id.rg_audio_quality)
         rbM4a = view.findViewById(R.id.rb_quality_m4a)
         rbOpus = view.findViewById(R.id.rb_quality_opus)
+        tvCacheSize = view.findViewById(R.id.tv_cache_size)
+        btnSetCacheSize = view.findViewById(R.id.btn_set_cache_size)
         btnClearCache = view.findViewById(R.id.btn_clear_cache)
 
         updateAccountUI()
+        updateCacheUI()
 
         btnLogin.setOnClickListener {
             val dialog = LoginDialog(requireContext()) {
@@ -61,8 +66,29 @@ class SettingsFragment : Fragment() {
             Toast.makeText(context, "已退出当前账号", Toast.LENGTH_SHORT).show()
         }
 
+        btnSetCacheSize.setOnClickListener {
+            val sizes = arrayOf(200, 500, 1024, 2048, 5120)
+            val labels = arrayOf("200 MB", "500 MB (默认)", "1024 MB (1 GB)", "2048 MB (2 GB)", "5120 MB (5 GB)")
+            val currentLimit = MusicPlayer.getCacheLimitMb(requireContext())
+            var selectedIndex = sizes.indexOf(currentLimit)
+            if (selectedIndex < 0) selectedIndex = 1
+
+            AlertDialog.Builder(requireContext(), R.style.Theme_CarYTM_Dialog)
+                .setTitle("选择本地音频缓存上限")
+                .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
+                    val chosenMb = sizes[which]
+                    MusicPlayer.setCacheLimitMb(requireContext(), chosenMb)
+                    updateCacheUI()
+                    Toast.makeText(context, "已设置缓存上限为 ${labels[which]}", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+
         btnClearCache.setOnClickListener {
             MusicPlayer.clearCache()
+            updateCacheUI()
             Toast.makeText(context, "本地缓存已清空", Toast.LENGTH_SHORT).show()
         }
 
@@ -71,6 +97,19 @@ class SettingsFragment : Fragment() {
         }
 
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateCacheUI()
+    }
+
+    private fun updateCacheUI() {
+        context?.let { ctx ->
+            val used = MusicPlayer.getUsedCacheSizeMb()
+            val limit = MusicPlayer.getCacheLimitMb(ctx)
+            tvCacheSize.text = String.format("本地音频缓存：已占用 %.1f MB (上限 %d MB)", used, limit)
+        }
     }
 
     private fun updateAccountUI() {

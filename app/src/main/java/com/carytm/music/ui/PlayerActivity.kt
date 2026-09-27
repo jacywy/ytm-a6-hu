@@ -18,6 +18,7 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     private lateinit var btnBack: View
     private lateinit var ivArtwork: ImageView
     private lateinit var btnLike: ImageButton
+    private lateinit var btnShuffle: ImageButton
     private lateinit var tvTitle: TextView
     private lateinit var tvArtist: TextView
     private lateinit var tvStatus: TextView
@@ -47,6 +48,7 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         btnBack = findViewById(R.id.player_btn_back)
         ivArtwork = findViewById(R.id.player_artwork)
         btnLike = findViewById(R.id.player_btn_like)
+        btnShuffle = findViewById(R.id.player_btn_shuffle)
         tvTitle = findViewById(R.id.player_title)
         tvArtist = findViewById(R.id.player_artist)
         tvStatus = findViewById(R.id.player_status_info)
@@ -62,6 +64,13 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     private fun setupListeners() {
         btnBack.setOnClickListener { finish() }
+
+        btnShuffle.setOnClickListener {
+            val enabled = MusicPlayer.toggleShuffle()
+            updateShuffleUI(enabled)
+            val msg = if (enabled) "随机播放已开启" else "随机播放已关闭"
+            android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
+        }
 
         btnPlayPause.setOnClickListener {
             MusicPlayer.togglePlayPause()
@@ -121,6 +130,16 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         }
 
         btnPlayPause.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+        updateShuffleUI(MusicPlayer.isShuffle)
+    }
+
+    private fun updateShuffleUI(isShuffle: Boolean) {
+        val color = if (isShuffle) {
+            androidx.core.content.ContextCompat.getColor(this, R.color.primary)
+        } else {
+            androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary)
+        }
+        btnShuffle.setColorFilter(color)
     }
 
     private fun formatTime(ms: Long): String {

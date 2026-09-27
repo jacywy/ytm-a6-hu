@@ -152,6 +152,13 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         }
     }
 
+    override fun onBackPressed() {
+        if (activeFragment is LibraryFragment && (activeFragment as LibraryFragment).handleBackPressed()) {
+            return
+        }
+        super.onBackPressed()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         MusicPlayer.removeListener(this)

@@ -134,15 +134,24 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="本地音频缓存：已占用 0 MB (上限 500 MB)"
+                android:text="本地音频缓存：已占用 0.0 MB (上限 500 MB)"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btn_set_cache_size"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="调整上限"
+                android:textColor="@color/primary" />
 
             <Button
                 android:id="@+id/btn_clear_cache"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
+                android:layout_marginStart="8dp"
                 android:text="清空缓存"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>

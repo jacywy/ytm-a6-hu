@@ -59,15 +59,31 @@
                 android:src="@drawable/ic_music_placeholder" />
         </androidx.cardview.widget.CardView>
 
-        <!-- Like / Favorite Button -->
-        <ImageButton
-            android:id="@+id/player_btn_like"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+        <!-- Like & Shuffle Buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_heart"
-            app:tint="@color/text_secondary" />
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/player_btn_like"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_heart"
+                app:tint="@color/text_secondary" />
+
+            <ImageButton
+                android:id="@+id/player_btn_shuffle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_shuffle"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
 
     </LinearLayout>
 
