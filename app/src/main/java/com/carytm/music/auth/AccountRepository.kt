@@ -33,6 +33,9 @@ class AccountRepository(context: Context) {
     val isLoggedIn: Boolean
         get() = !accessToken.isNullOrBlank() || !cookies.isNullOrBlank()
 
+    val hasCookies: Boolean
+        get() = !cookies.isNullOrBlank()
+
     fun clear() {
         prefs.edit().clear().apply()
     }
