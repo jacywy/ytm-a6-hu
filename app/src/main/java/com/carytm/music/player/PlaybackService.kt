@@ -7,11 +7,17 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.ui.MainActivity
@@ -91,12 +97,48 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private var currentAlbumArt: Bitmap? = null
+
     override fun onSongChanged(song: SongItem?) {
         updatePlaybackState()
+        updateMetadataAndNotification(song)
+    }
+
+    private fun updateMetadataAndNotification(song: SongItem?) {
         val title = song?.title ?: "CarYTM"
         val artist = song?.artist ?: "正在播放"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, buildNotification(title, artist))
+        val album = if (!song?.albumName.isNullOrBlank()) song.albumName else "YouTube Music"
+
+        // Update MediaMetadataCompat for Car Dashboard, HUD, and Car Home Launchers
+        val metadataBuilder = MediaMetadataCompat.Builder()
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, (song?.durationSec ?: 0L) * 1000L)
+
+        mediaSession.setMetadata(metadataBuilder.build())
+
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(NOTIFICATION_ID, buildNotification(title, artist, currentAlbumArt))
+
+        // Asynchronously fetch album art bitmap for notification and car instrument cluster
+        if (!song?.thumbnailUrl.isNullOrBlank()) {
+            Glide.with(applicationContext)
+                .asBitmap()
+                .load(song.thumbnailUrl)
+                .into(object : CustomTarget<Bitmap>(256, 256) {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        currentAlbumArt = resource
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
+                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
+                        mediaSession.setMetadata(metadataBuilder.build())
+                        nm.notify(NOTIFICATION_ID, buildNotification(title, artist, resource))
+                    }
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                })
+        } else {
+            currentAlbumArt = null
+        }
     }
 
     override fun onPlayStateChanged(isPlaying: Boolean) {
@@ -104,6 +146,11 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         if (isPlaying) {
             audioFocusManager.requestAudioFocus()
         }
+        val song = MusicPlayer.getCurrentSong()
+        val title = song?.title ?: "CarYTM"
+        val artist = song?.artist ?: "正在播放"
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(NOTIFICATION_ID, buildNotification(title, artist, currentAlbumArt))
     }
 
     override fun onBuffering(isBuffering: Boolean) {
@@ -153,7 +200,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         }
     }
 
-    private fun buildNotification(title: String, artist: String): Notification {
+    private fun buildNotification(title: String, artist: String, albumArt: Bitmap? = null): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -162,18 +209,23 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(artist)
             .setSmallIcon(R.drawable.ic_home)
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
+            .setOngoing(MusicPlayer.isPlaying())
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
                     .setShowActionsInCompactView(0)
             )
-            .build()
+
+        if (albumArt != null) {
+            builder.setLargeIcon(albumArt)
+        }
+
+        return builder.build()
     }
 
     override fun onDestroy() {
