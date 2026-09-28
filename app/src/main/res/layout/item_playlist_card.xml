@@ -25,7 +25,7 @@
             android:layout_height="64dp"
             app:cardCornerRadius="6dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/surface_bg">
+            app:cardBackgroundColor="@color/surface">
 
             <ImageView
                 android:id="@+id/iv_playlist_cover"
