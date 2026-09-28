@@ -123,6 +123,8 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         if (song != null) {
             miniSongTitle.text = song.title
             miniArtistName.text = song.artist
+            miniSongTitle.isSelected = true
+            miniArtistName.isSelected = true
             if (song.thumbnailUrl.isNotBlank()) {
                 Glide.with(this)
                     .load(song.thumbnailUrl)

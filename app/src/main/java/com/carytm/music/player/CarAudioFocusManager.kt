@@ -10,6 +10,7 @@ import android.os.Looper
 
 class CarAudioFocusManager(
     context: Context,
+    private val isPlaying: () -> Boolean,
     private val onPauseRequested: () -> Unit,
     private val onResumeRequested: () -> Unit,
     private val onDuckRequested: (Float) -> Unit
@@ -21,6 +22,10 @@ class CarAudioFocusManager(
     private var resumeOnFocusGain = false
     private var isDucked = false
     private var audioFocusRequest: AudioFocusRequest? = null
+
+    fun onUserPaused() {
+        resumeOnFocusGain = false
+    }
 
     fun requestAudioFocus(): Boolean {
         if (hasAudioFocus) return true
@@ -97,15 +102,21 @@ class CarAudioFocusManager(
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 hasAudioFocus = false
-                // Remember that music was playing before the transient loss (e.g. phone call, other app speaking)
-                resumeOnFocusGain = true
-                onPauseRequested()
+                // Only mark to resume if music was actively playing when focus was temporarily lost
+                if (isPlaying()) {
+                    resumeOnFocusGain = true
+                    onPauseRequested()
+                } else {
+                    resumeOnFocusGain = false
+                }
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Navigation voice prompt is speaking! Duck music volume to 20%
-                isDucked = true
-                onDuckRequested(0.2f)
+                // Navigation voice prompt is speaking! Duck music volume to 20% only if playing
+                if (isPlaying()) {
+                    isDucked = true
+                    onDuckRequested(0.2f)
+                }
             }
         }
     }

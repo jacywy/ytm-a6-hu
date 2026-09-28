@@ -44,11 +44,17 @@ class PlaylistAdapter(
             tvAuthor.text = authorText
 
             if (item.thumbnailUrl.isNotBlank()) {
+                ivCover.setPadding(0, 0, 0, 0)
                 Glide.with(itemView.context)
                     .load(item.thumbnailUrl)
                     .placeholder(R.drawable.ic_music_placeholder)
                     .into(ivCover)
+            } else if (item.playlistId == "LM" || item.playlistId == "LL") {
+                val pad = (16 * itemView.resources.displayMetrics.density).toInt()
+                ivCover.setPadding(pad, pad, pad, pad)
+                ivCover.setImageResource(R.drawable.ic_heart)
             } else {
+                ivCover.setPadding(0, 0, 0, 0)
                 ivCover.setImageResource(R.drawable.ic_music_placeholder)
             }
 

@@ -154,6 +154,7 @@ object InnertubeApi {
 
         // Case A: Google TV OAuth Login
         repo.accessToken?.let {
+            // 1. Fetch TV Library landing (FEmy_youtube)
             try {
                 val payload = createTvContext()
                 payload.addProperty("browseId", "FEmy_youtube")
@@ -173,20 +174,43 @@ object InnertubeApi {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
 
-        // Case B: Cookie Login
-        if (repo.hasCookies) {
+            // 2. Fetch TV All Playlists aggregation (FEplaylist_aggregation)
             try {
-                val payload = createBaseContext()
-                payload.addProperty("browseId", "FEmusic_liked_playlists")
+                val payload = createTvContext()
+                payload.addProperty("browseId", "FEplaylist_aggregation")
 
                 val request = Request.Builder()
-                    .url("$BASE_URL/browse")
+                    .url("$TV_BASE_URL/browse")
+                    .header("X-Use-OAuth", "true")
                     .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
                     .build()
 
                 val response = NetworkClient.okHttpClient.newCall(request).execute()
+                val body = response.body?.string()
+                if (!body.isNullOrBlank()) {
+                    val json = JsonParser.parseString(body).asJsonObject
+                    parseTvPlaylists(json, list, context.getString(R.string.my_playlists))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // Case B: Cookie Login (or if logged in)
+        if (repo.hasCookies || repo.isLoggedIn) {
+            try {
+                val payload = createBaseContext()
+                payload.addProperty("browseId", "FEmusic_liked_playlists")
+
+                val requestBuilder = Request.Builder()
+                    .url("$BASE_URL/browse")
+                    .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
+                if (repo.accessToken != null) {
+                    requestBuilder.header("X-Use-OAuth", "true")
+                }
+
+                val response = NetworkClient.okHttpClient.newCall(requestBuilder.build()).execute()
                 val body = response.body?.string()
                 if (!body.isNullOrBlank()) {
                     val json = JsonParser.parseString(body).asJsonObject
@@ -202,45 +226,45 @@ object InnertubeApi {
 
     suspend fun getPlaylistTracks(playlistId: String): List<SongItem> = withContext(Dispatchers.IO) {
         val list = mutableListOf<SongItem>()
-        val isPl = playlistId.startsWith("PL") || playlistId == "WL" || playlistId == "LM"
+        val cleanPlaylistId = if (playlistId.startsWith("VL")) playlistId.removePrefix("VL") else playlistId
+        val browseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
 
-        // 1. If it's a YouTube / TV Playlist, try TV browse with OAuth
-        if (isPl) {
-            try {
-                val browseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
-                val payload = createTvContext()
-                payload.addProperty("browseId", browseId)
+        // 1. Try TV browse with OAuth if logged in, or standard TV client
+        try {
+            val payload = createTvContext()
+            payload.addProperty("browseId", browseId)
 
-                val request = Request.Builder()
-                    .url("$TV_BASE_URL/browse")
-                    .header("X-Use-OAuth", "true")
-                    .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
-
-                val response = NetworkClient.okHttpClient.newCall(request).execute()
-                val body = response.body?.string()
-                if (!body.isNullOrBlank()) {
-                    val json = JsonParser.parseString(body).asJsonObject
-                    parseTvPlaylistItems(json, list)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            val requestBuilder = Request.Builder()
+                .url("$TV_BASE_URL/browse")
+                .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
+            if (NetworkClient.accountRepo.accessToken != null) {
+                requestBuilder.header("X-Use-OAuth", "true")
             }
+
+            val response = NetworkClient.okHttpClient.newCall(requestBuilder.build()).execute()
+            val body = response.body?.string()
+            if (!body.isNullOrBlank()) {
+                val json = JsonParser.parseString(body).asJsonObject
+                parseTvPlaylistItems(json, list)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
         // 2. If empty, try Web Music browse
         if (list.isEmpty()) {
             try {
-                val browseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
                 val payload = createBaseContext()
                 payload.addProperty("browseId", browseId)
 
-                val request = Request.Builder()
+                val requestBuilder = Request.Builder()
                     .url("$BASE_URL/browse")
                     .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
+                if (NetworkClient.accountRepo.accessToken != null) {
+                    requestBuilder.header("X-Use-OAuth", "true")
+                }
 
-                val response = NetworkClient.okHttpClient.newCall(request).execute()
+                val response = NetworkClient.okHttpClient.newCall(requestBuilder.build()).execute()
                 val body = response.body?.string()
                 if (!body.isNullOrBlank()) {
                     val json = JsonParser.parseString(body).asJsonObject
@@ -254,7 +278,7 @@ object InnertubeApi {
         // 3. Fallback to NewPipeExtractor for playlist scraping
         if (list.isEmpty()) {
             try {
-                val npSongs = StreamResolver.getPlaylistSongs(playlistId)
+                val npSongs = StreamResolver.getPlaylistSongs(cleanPlaylistId)
                 list.addAll(npSongs)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -265,79 +289,228 @@ object InnertubeApi {
     }
 
     private fun parseTvPlaylists(json: JsonObject, output: MutableList<PlaylistItem>, authorName: String = "Playlists") {
-        val plRegex = Regex("""(PL[a-zA-Z0-9_-]{10,}|RD[a-zA-Z0-9_-]{10,})""")
-        fun findTabs(elem: JsonObject) {
-            if (elem.has("tabRenderer")) {
-                val tab = elem.getAsJsonObject("tabRenderer")
-                val title = if (tab.has("title")) {
-                    val t = tab.get("title")
-                    if (t.isJsonPrimitive) t.asString else extractTextFromRuns(t.asJsonObject)
-                } else ""
+        val plRegex = Regex("""(PL[a-zA-Z0-9_-]{10,}|RD[a-zA-Z0-9_-]{10,}|LL|WL)""")
 
-                val endpoint = tab.getAsJsonObject("endpoint")?.getAsJsonObject("browseEndpoint")
-                val params = endpoint?.get("params")?.asString
+        fun traverse(elem: JsonObject) {
+            // 1. Tile Renderer (Standard in YouTube TV)
+            if (elem.has("tileRenderer")) {
+                val tile = elem.getAsJsonObject("tileRenderer")
+                val onSelect = tile.getAsJsonObject("onSelectCommand") ?: tile.getAsJsonObject("navigationEndpoint")
+                val browseEndpoint = onSelect?.getAsJsonObject("browseEndpoint")
+                val watchEndpoint = onSelect?.getAsJsonObject("watchEndpoint")
 
-                val foundPl = if (params != null) plRegex.find(params)?.value else null
-                val playlistId = foundPl ?: if (title.contains("稍后观看") || title.contains("Watch Later", ignoreCase = true)) "WL" else null
+                val rawBrowseId = browseEndpoint?.get("browseId")?.asString
+                val watchPlId = watchEndpoint?.get("playlistId")?.asString
+                val params = browseEndpoint?.get("params")?.asString
 
-                val thumbnails = tab.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
-                var thumb = ""
-                if (thumbnails != null && thumbnails.size() > 0) {
-                    thumb = thumbnails[thumbnails.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                var playlistId: String? = null
+                if (!watchPlId.isNullOrBlank()) {
+                    playlistId = watchPlId
+                } else if (!rawBrowseId.isNullOrBlank()) {
+                    if (rawBrowseId.startsWith("VL")) {
+                        playlistId = rawBrowseId.removePrefix("VL")
+                    } else if (rawBrowseId.startsWith("PL") || rawBrowseId.startsWith("RD") || rawBrowseId.startsWith("FL") || rawBrowseId == "WL" || rawBrowseId == "LL" || rawBrowseId == "LM") {
+                        playlistId = rawBrowseId
+                    }
+                }
+                if (playlistId == null && params != null) {
+                    playlistId = plRegex.find(params)?.value
                 }
 
-                if (playlistId != null && title.isNotBlank() && title != "播放列表" && !title.equals("Playlists", ignoreCase = true)) {
+                val meta = tile.getAsJsonObject("metadata")?.getAsJsonObject("tileMetadataRenderer")
+                val titleObj = meta?.get("title")
+                val title = when {
+                    titleObj == null -> ""
+                    titleObj.isJsonPrimitive -> titleObj.asString.trim()
+                    titleObj.isJsonObject -> {
+                        val o = titleObj.asJsonObject
+                        if (o.has("simpleText")) o.get("simpleText")?.asString?.trim() ?: ""
+                        else extractTextFromRuns(o)
+                    }
+                    else -> ""
+                }
+
+                if (playlistId == null && title.isNotBlank()) {
+                    if (title.contains("稍后观看") || title.contains("Watch Later", ignoreCase = true)) {
+                        playlistId = "WL"
+                    } else if (title.contains("顶过的视频") || title.contains("Liked", ignoreCase = true)) {
+                        playlistId = "LL"
+                    }
+                }
+
+                var author = authorName
+                var songCountText = ""
+                val lines = meta?.getAsJsonArray("lines")
+                if (lines != null) {
+                    for (i in 0 until lines.size()) {
+                        val line = lines[i].asJsonObject.getAsJsonObject("lineRenderer")
+                        val items = line?.getAsJsonArray("items")
+                        if (items != null && items.size() > 0) {
+                            val textObj = items[0].asJsonObject.getAsJsonObject("lineItemRenderer")?.getAsJsonObject("text")
+                            val text = extractTextFromRuns(textObj)
+                            if (text.isNotBlank()) {
+                                if (i == 0) author = text
+                                else if (i == 1) songCountText = text
+                            }
+                        }
+                    }
+                }
+
+                var thumb = ""
+                val header = tile.getAsJsonObject("header")?.getAsJsonObject("tileHeaderRenderer")
+                val headerThumbs = header?.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                if (headerThumbs != null && headerThumbs.size() > 0) {
+                    thumb = headerThumbs[headerThumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                }
+                if (thumb.isBlank()) {
+                    val tileThumbs = tile.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                    if (tileThumbs != null && tileThumbs.size() > 0) {
+                        thumb = tileThumbs[tileThumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                    }
+                }
+                if (thumb.startsWith("//")) thumb = "https:$thumb"
+
+                if (playlistId != null && title.isNotBlank() && !title.equals("Playlists", ignoreCase = true) && title != "播放列表" && !title.contains("设置") && !title.contains("Settings")) {
                     output.add(
                         PlaylistItem(
                             playlistId = playlistId,
                             title = title,
-                            author = authorName,
+                            author = author,
                             thumbnailUrl = thumb,
-                            songCountText = ""
+                            songCountText = songCountText
                         )
                     )
                 }
             }
+
+            // 2. Grid Playlist Renderer (standard YouTube grid)
+            if (elem.has("gridPlaylistRenderer")) {
+                val grid = elem.getAsJsonObject("gridPlaylistRenderer")
+                val plId = grid.get("playlistId")?.asString
+                val titleObj = grid.getAsJsonObject("title")
+                val title = extractTextFromRuns(titleObj)
+                val author = extractTextFromRuns(grid.getAsJsonObject("shortBylineText"))
+                val countText = grid.getAsJsonObject("videoCountShortText")?.get("simpleText")?.asString
+                    ?: extractTextFromRuns(grid.getAsJsonObject("videoCountText"))
+                val thumbs = grid.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                var thumb = ""
+                if (thumbs != null && thumbs.size() > 0) {
+                    thumb = thumbs[thumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                }
+                if (thumb.startsWith("//")) thumb = "https:$thumb"
+                if (plId != null && title.isNotBlank()) {
+                    output.add(PlaylistItem(plId, title, author.takeIf { it.isNotBlank() } ?: authorName, thumb, countText))
+                }
+            }
+
+            // 3. Playlist Renderer (standard YouTube list)
+            if (elem.has("playlistRenderer")) {
+                val pl = elem.getAsJsonObject("playlistRenderer")
+                val plId = pl.get("playlistId")?.asString
+                val titleObj = pl.getAsJsonObject("title")
+                val title = extractTextFromRuns(titleObj)
+                val author = extractTextFromRuns(pl.getAsJsonObject("shortBylineText"))
+                val countText = pl.getAsJsonObject("videoCountShortText")?.get("simpleText")?.asString
+                    ?: extractTextFromRuns(pl.getAsJsonObject("videoCountText"))
+                val thumbs = pl.getAsJsonObject("thumbnails")?.getAsJsonArray("thumbnails")
+                    ?: pl.getAsJsonObject("thumbnailRenderer")?.getAsJsonObject("playlistVideoThumbnailRenderer")?.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                var thumb = ""
+                if (thumbs != null && thumbs.size() > 0) {
+                    thumb = thumbs[thumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                }
+                if (thumb.startsWith("//")) thumb = "https:$thumb"
+                if (plId != null && title.isNotBlank()) {
+                    output.add(PlaylistItem(plId, title, author.takeIf { it.isNotBlank() } ?: authorName, thumb, countText))
+                }
+            }
+
+            // 4. Music Two Row Item Renderer
+            if (elem.has("musicTwoRowItemRenderer")) {
+                val item = elem.getAsJsonObject("musicTwoRowItemRenderer")
+                val endpoint = item.getAsJsonObject("navigationEndpoint")?.getAsJsonObject("browseEndpoint")
+                val browseId = endpoint?.get("browseId")?.asString
+                val plId = if (browseId != null && browseId.startsWith("VL")) browseId.removePrefix("VL") else browseId
+                val title = extractTextFromRuns(item.getAsJsonObject("title"))
+                val subtitle = extractTextFromRuns(item.getAsJsonObject("subtitle"))
+                val thumbs = item.getAsJsonObject("thumbnailRenderer")?.getAsJsonObject("musicThumbnailRenderer")?.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                var thumb = ""
+                if (thumbs != null && thumbs.size() > 0) {
+                    thumb = thumbs[thumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                }
+                if (thumb.startsWith("//")) thumb = "https:$thumb"
+                if (plId != null && title.isNotBlank()) {
+                    output.add(PlaylistItem(plId, title, subtitle.takeIf { it.isNotBlank() } ?: authorName, thumb))
+                }
+            }
+
+            // Recursive traversal for nested JSON
             for (key in elem.keySet()) {
                 val child = elem.get(key)
-                if (child != null && child.isJsonObject) findTabs(child.asJsonObject)
-                else if (child != null && child.isJsonArray) {
+                if (child != null && child.isJsonObject) {
+                    traverse(child.asJsonObject)
+                } else if (child != null && child.isJsonArray) {
                     for (a in child.asJsonArray) {
-                        if (a.isJsonObject) findTabs(a.asJsonObject)
+                        if (a.isJsonObject) traverse(a.asJsonObject)
                     }
                 }
             }
         }
-        findTabs(json)
+
+        traverse(json)
     }
 
     private fun parseTvPlaylistItems(json: JsonObject, output: MutableList<SongItem>) {
         fun findTiles(elem: JsonObject) {
             if (elem.has("tileRenderer")) {
                 val tile = elem.getAsJsonObject("tileRenderer")
-                val videoId = tile.getAsJsonObject("onSelectCommand")
-                    ?.getAsJsonObject("watchEndpoint")
-                    ?.get("videoId")?.asString
+                val onSelect = tile.getAsJsonObject("onSelectCommand") ?: tile.getAsJsonObject("navigationEndpoint")
+                val videoId = onSelect?.getAsJsonObject("watchEndpoint")?.get("videoId")?.asString
 
-                val titleObj = tile.getAsJsonObject("metadata")
-                    ?.getAsJsonObject("tileMetadataRenderer")
-                    ?.get("title")
-                val title = if (titleObj?.isJsonObject == true) {
-                    val obj = titleObj.asJsonObject
-                    obj.get("simpleText")?.asString ?: extractTextFromRuns(obj)
-                } else ""
+                val meta = tile.getAsJsonObject("metadata")?.getAsJsonObject("tileMetadataRenderer")
+                val titleObj = meta?.get("title")
+                val title = when {
+                    titleObj == null -> ""
+                    titleObj.isJsonPrimitive -> titleObj.asString.trim()
+                    titleObj.isJsonObject -> {
+                        val obj = titleObj.asJsonObject
+                        if (obj.has("simpleText")) obj.get("simpleText")?.asString?.trim() ?: ""
+                        else extractTextFromRuns(obj)
+                    }
+                    else -> ""
+                }
 
-                val lineObj = tile.getAsJsonObject("metadata")
-                    ?.getAsJsonObject("tileMetadataRenderer")
-                    ?.getAsJsonArray("lines")
-                var artist = "YouTube"
+                var artist = ""
+                val lineObj = meta?.getAsJsonArray("lines")
                 if (lineObj != null && lineObj.size() > 0) {
                     val line = lineObj[0].asJsonObject.getAsJsonObject("lineRenderer")
                     val items = line?.getAsJsonArray("items")
                     if (items != null && items.size() > 0) {
                         val textObj = items[0].asJsonObject.getAsJsonObject("lineItemRenderer")?.getAsJsonObject("text")
-                        artist = extractTextFromRuns(textObj).takeIf { it.isNotBlank() } ?: "YouTube"
+                        artist = extractTextFromRuns(textObj)
                     }
+                }
+
+                // If artist is blank or "YouTube", try extracting from title formatted like "Artist - Song Title"
+                if (artist.isBlank() || artist.equals("YouTube", ignoreCase = true)) {
+                    if (title.contains(" - ")) {
+                        val parts = title.split(" - ", limit = 2)
+                        if (parts.size == 2 && parts[0].isNotBlank()) {
+                            artist = parts[0].trim()
+                        }
+                    } else if (title.contains(" — ")) {
+                        val parts = title.split(" — ", limit = 2)
+                        if (parts.size == 2 && parts[0].isNotBlank()) {
+                            artist = parts[0].trim()
+                        }
+                    } else if (title.contains("–")) {
+                        val parts = title.split("–", limit = 2)
+                        if (parts.size == 2 && parts[0].isNotBlank()) {
+                            artist = parts[0].trim()
+                        }
+                    }
+                }
+                if (artist.isBlank()) {
+                    artist = "YouTube"
                 }
 
                 val header = tile.getAsJsonObject("header")?.getAsJsonObject("tileHeaderRenderer")
@@ -346,6 +519,13 @@ object InnertubeApi {
                 if (thumbnails != null && thumbnails.size() > 0) {
                     thumb = thumbnails[thumbnails.size() - 1].asJsonObject.get("url")?.asString ?: ""
                 }
+                if (thumb.isBlank()) {
+                    val tileThumbs = tile.getAsJsonObject("thumbnail")?.getAsJsonArray("thumbnails")
+                    if (tileThumbs != null && tileThumbs.size() > 0) {
+                        thumb = tileThumbs[tileThumbs.size() - 1].asJsonObject.get("url")?.asString ?: ""
+                    }
+                }
+                if (thumb.startsWith("//")) thumb = "https:$thumb"
 
                 val overlays = header?.getAsJsonArray("thumbnailOverlays")
                 var duration = ""
@@ -439,6 +619,13 @@ object InnertubeApi {
 
             if (thumbnails != null && thumbnails.size() > 0) {
                 thumb = thumbnails[thumbnails.size() - 1].asJsonObject.get("url")?.asString ?: ""
+            }
+
+            if ((artist.isBlank() || artist.equals("YouTube", ignoreCase = true)) && title.contains(" - ")) {
+                val parts = title.split(" - ", limit = 2)
+                if (parts.size == 2 && parts[0].isNotBlank()) {
+                    artist = parts[0].trim()
+                }
             }
 
             if (title.isNotBlank()) {
@@ -545,6 +732,12 @@ object InnertubeApi {
 
     private fun extractTextFromRuns(textObj: JsonObject?): String {
         if (textObj == null) return ""
+        if (textObj.has("simpleText")) {
+            val st = textObj.get("simpleText")
+            if (st != null && !st.isJsonNull) {
+                return st.asString.trim()
+            }
+        }
         val runs = textObj.getAsJsonArray("runs") ?: return ""
         val sb = StringBuilder()
         for (i in 0 until runs.size()) {

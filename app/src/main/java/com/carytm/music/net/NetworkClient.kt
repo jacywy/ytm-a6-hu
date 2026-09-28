@@ -15,7 +15,7 @@ import javax.net.ssl.X509TrustManager
 object NetworkClient {
 
     private var initialized = false
-    private lateinit var accountRepo: AccountRepository
+    lateinit var accountRepo: AccountRepository
 
     fun init(context: Context) {
         if (!initialized) {

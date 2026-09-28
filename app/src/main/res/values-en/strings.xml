@@ -113,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">Protocol &amp; Maintenance</string>
-    <string name="settings_version_info">CarYTM v0.2.4 (API 23 Car Special Edition)</string>
+    <string name="settings_version_info">CarYTM v0.2.5 (API 23 Car Special Edition)</string>
     <string name="settings_protocol_desc">This app decouples the NewPipeExtractor protocol engine. When YouTube updates its anti-scraping rules, simply update the version number in GitHub and commit; Actions will build a patched APK in 3 minutes.</string>
 
     <!-- LAN Cookie Assistant -->

@@ -54,6 +54,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         // Initialize Car AudioFocus Manager with Ducking
         audioFocusManager = CarAudioFocusManager(
             context = this,
+            isPlaying = { MusicPlayer.isPlaying() },
             onPauseRequested = { MusicPlayer.pause() },
             onResumeRequested = { MusicPlayer.play() },
             onDuckRequested = { vol -> MusicPlayer.setVolume(vol) }
@@ -160,6 +161,8 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         updatePlaybackState()
         if (isPlaying) {
             audioFocusManager.requestAudioFocus()
+        } else {
+            audioFocusManager.onUserPaused()
         }
         val song = MusicPlayer.getCurrentSong()
         val title = song?.title ?: "CarYTM"

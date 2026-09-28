@@ -15,22 +15,33 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp">
 
         <!-- Cover Image -->
-        <ImageView
-            android:id="@+id/iv_playlist_cover"
-            android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_music_placeholder" />
+        <androidx.cardview.widget.CardView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/surface_bg">
+
+            <ImageView
+                android:id="@+id/iv_playlist_cover"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_music_placeholder" />
+        </androidx.cardview.widget.CardView>
 
         <!-- Info -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp">
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tv_playlist_title"
@@ -47,7 +58,7 @@
                 android:id="@+id/tv_playlist_author"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="4dp"
                 android:ellipsize="end"
                 android:singleLine="true"
                 tools:text="YouTube Music"

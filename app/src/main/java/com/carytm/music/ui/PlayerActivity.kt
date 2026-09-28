@@ -124,6 +124,8 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         if (song != null) {
             tvTitle.text = song.title
             tvArtist.text = song.artist
+            tvTitle.isSelected = true
+            tvArtist.isSelected = true
 
             if (song.thumbnailUrl.isNotBlank()) {
                 Glide.with(this)
