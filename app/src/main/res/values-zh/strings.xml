@@ -113,8 +113,22 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">协议热维护说明</string>
-    <string name="settings_version_info">CarYTM v0.2.5 (API 23 车机专用版)</string>
+    <string name="settings_version_info">CarYTM v0.2.6 (API 23 车机专用版)</string>
     <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
+    <string name="settings_check_update">检查新版本</string>
+    <string name="settings_checking_update">正在检查更新...</string>
+
+    <!-- In-App Updates -->
+    <string name="update_dialog_title">发现新版本: %s</string>
+    <string name="update_default_changelog">CarYTM 新版本已就绪，推荐更新以获得更好的稳定性与体验。</string>
+    <string name="update_btn_download_now">立即更新</string>
+    <string name="update_btn_later">稍后再说</string>
+    <string name="update_downloading_title">正在下载更新</string>
+    <string name="update_downloading_hint">正在下载新版本 APK，请稍候...</string>
+    <string name="update_already_latest">当前已是最新版本</string>
+    <string name="update_check_failed">检查更新失败，请检查车机网络连接</string>
+    <string name="update_download_failed">下载更新失败: %s</string>
+    <string name="update_install_failed">调起安装程序失败: %s</string>
 
     <!-- LAN Cookie Assistant -->
     <string name="cookie_server_title">局域网 Cookie 导入助手</string>

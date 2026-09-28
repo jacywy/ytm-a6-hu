@@ -69,11 +69,26 @@ object OfflineRepository {
     private var initialized = false
     private val lock = Any()
 
+    private fun getMetaFile(context: Context): File {
+        val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+        val newFile = File(baseDir, FILE_NAME)
+        val oldFile = File(context.filesDir, FILE_NAME)
+        if (!newFile.exists() && oldFile.exists()) {
+            try {
+                oldFile.copyTo(newFile, overwrite = true)
+                oldFile.delete()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return newFile
+    }
+
     private fun ensureInit(context: Context) {
         synchronized(lock) {
             if (initialized) return
             try {
-                val file = File(context.filesDir, FILE_NAME)
+                val file = getMetaFile(context)
                 if (file.exists()) {
                     val content = file.readText()
                     val array = JSONArray(content)
@@ -94,7 +109,7 @@ object OfflineRepository {
             try {
                 val array = JSONArray()
                 records.values.forEach { array.put(it.toJson()) }
-                val file = File(context.filesDir, FILE_NAME)
+                val file = getMetaFile(context)
                 file.writeText(array.toString())
             } catch (e: Exception) {
                 e.printStackTrace()

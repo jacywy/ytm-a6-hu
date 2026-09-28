@@ -12,6 +12,7 @@ import com.carytm.music.R
 import com.carytm.music.auth.AccountRepository
 import com.carytm.music.auth.CookieImportServer
 import com.carytm.music.player.MusicPlayer
+import com.carytm.music.update.AppUpdateManager
 import com.carytm.music.util.LocaleHelper
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -30,6 +31,7 @@ class SettingsFragment : Fragment() {
     private lateinit var btnClearCache: Button
     private lateinit var tvLanguage: TextView
     private lateinit var btnLanguage: Button
+    private lateinit var btnCheckUpdate: Button
 
     private var cookieServer: CookieImportServer? = null
 
@@ -47,6 +49,12 @@ class SettingsFragment : Fragment() {
         btnClearCache = view.findViewById(R.id.btn_clear_cache)
         tvLanguage = view.findViewById(R.id.tv_settings_language)
         btnLanguage = view.findViewById(R.id.btn_settings_language)
+        btnCheckUpdate = view.findViewById(R.id.btn_settings_check_update)
+
+        btnCheckUpdate.setOnClickListener {
+            Toast.makeText(context, getString(R.string.settings_checking_update), Toast.LENGTH_SHORT).show()
+            AppUpdateManager.checkForUpdate(requireActivity(), isManual = true)
+        }
 
         updateAccountUI()
         updateCacheUI()

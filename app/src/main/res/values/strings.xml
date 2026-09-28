@@ -113,8 +113,22 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">Protocol &amp; Maintenance</string>
-    <string name="settings_version_info">CarYTM v0.2.5 (API 23 Car Special Edition)</string>
+    <string name="settings_version_info">CarYTM v0.2.6 (API 23 Car Special Edition)</string>
     <string name="settings_protocol_desc">This app decouples the NewPipeExtractor protocol engine. When YouTube updates its anti-scraping rules, simply update the version number in GitHub and commit; Actions will build a patched APK in 3 minutes.</string>
+    <string name="settings_check_update">Check for Updates</string>
+    <string name="settings_checking_update">Checking for updates...</string>
+
+    <!-- In-App Updates -->
+    <string name="update_dialog_title">New Version Available: %s</string>
+    <string name="update_default_changelog">A new version of CarYTM is ready to install. Update now for better stability and features.</string>
+    <string name="update_btn_download_now">Update Now</string>
+    <string name="update_btn_later">Later</string>
+    <string name="update_downloading_title">Downloading Update</string>
+    <string name="update_downloading_hint">Downloading update package, please wait...</string>
+    <string name="update_already_latest">You are using the latest version</string>
+    <string name="update_check_failed">Failed to check for updates. Please check your network connection.</string>
+    <string name="update_download_failed">Download failed: %s</string>
+    <string name="update_install_failed">Unable to launch package installer: %s</string>
 
     <!-- LAN Cookie Assistant -->
     <string name="cookie_server_title">LAN Cookie Import Assistant</string>

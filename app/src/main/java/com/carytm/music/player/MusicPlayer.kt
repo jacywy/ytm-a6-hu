@@ -73,7 +73,7 @@ object MusicPlayer {
         if (exoPlayer != null) return
 
         val cacheSizeMb = getCacheLimitMb(context)
-        val cacheDir = File(context.cacheDir, "audio_cache")
+        val cacheDir = getAudioCacheDir(context)
         val evictor = LeastRecentlyUsedCacheEvictor(cacheSizeMb * 1024 * 1024L)
         val databaseProvider = StandaloneDatabaseProvider(context)
         simpleCache = SimpleCache(cacheDir, evictor, databaseProvider)
@@ -396,12 +396,36 @@ object MusicPlayer {
         return prefs.getInt("pref_cache_size_mb", 500)
     }
 
+    fun getAudioCacheDir(context: Context): File {
+        val oldCacheDir = File(context.cacheDir, "audio_cache")
+        val baseDir = context.externalCacheDir ?: context.cacheDir
+        val cacheDir = File(baseDir, "audio_cache")
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
+        // Seamlessly migrate any existing cache from /data partition to SD card
+        if (baseDir != context.cacheDir && oldCacheDir.exists() && oldCacheDir.isDirectory) {
+            try {
+                oldCacheDir.listFiles()?.forEach { file ->
+                    val target = File(cacheDir, file.name)
+                    if (!target.exists()) {
+                        file.renameTo(target)
+                    }
+                }
+                oldCacheDir.deleteRecursively()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return cacheDir
+    }
+
     fun setCacheLimitMb(context: Context, sizeMb: Int) {
         val prefs = context.getSharedPreferences("carytm_settings", Context.MODE_PRIVATE)
         prefs.edit().putInt("pref_cache_size_mb", sizeMb).apply()
         try {
             simpleCache?.release()
-            val cacheDir = File(context.cacheDir, "audio_cache")
+            val cacheDir = getAudioCacheDir(context)
             val evictor = LeastRecentlyUsedCacheEvictor(sizeMb * 1024 * 1024L)
             val databaseProvider = StandaloneDatabaseProvider(context)
             simpleCache = SimpleCache(cacheDir, evictor, databaseProvider)

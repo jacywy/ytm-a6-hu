@@ -58,6 +58,13 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
         // Default open Home
         switchFragment(HomeFragment(), navBtnHome)
+
+        // Check for updates quietly after initial launch
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (!isFinishing) {
+                com.carytm.music.update.AppUpdateManager.checkForUpdate(this, isManual = false)
+            }
+        }, 3000)
     }
 
     private fun initViews() {
