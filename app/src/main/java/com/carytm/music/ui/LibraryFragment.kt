@@ -159,6 +159,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
                 tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, tracks.size)
                 songAdapter.submitList(currentTracks)
                 songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
+                scrollToCurrentPlayingTrack()
                 tvDetailEmpty.visibility = View.GONE
             } else {
                 tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, 0)
@@ -181,9 +182,24 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         return closePlaylistDetail()
     }
 
+    private fun scrollToCurrentPlayingTrack() {
+        if (layoutPlaylistDetail.visibility != View.VISIBLE) return
+        val currentVideoId = MusicPlayer.getCurrentSong()?.videoId ?: return
+        val index = currentTracks.indexOfFirst { it.videoId == currentVideoId }
+        if (index >= 0) {
+            val lm = rvPlaylistTracks.layoutManager as? LinearLayoutManager ?: return
+            val first = lm.findFirstCompletelyVisibleItemPosition()
+            val last = lm.findLastCompletelyVisibleItemPosition()
+            if (index < first || index > last) {
+                lm.scrollToPositionWithOffset(index, 40)
+            }
+        }
+    }
+
     override fun onSongChanged(song: SongItem?) {
         activity?.runOnUiThread {
             songAdapter.setCurrentPlaying(song?.videoId)
+            scrollToCurrentPlayingTrack()
         }
     }
 
@@ -222,6 +238,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             tvDetailEmpty.visibility = View.GONE
             songAdapter.submitList(currentTracks)
             songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
+            scrollToCurrentPlayingTrack()
         } else {
             tvDetailSubtitle.text = getString(R.string.tracks_count_simple, 0)
             tvDetailEmpty.visibility = View.VISIBLE

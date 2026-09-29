@@ -122,8 +122,12 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     private fun updateUI(song: SongItem?, isPlaying: Boolean) {
         if (song != null) {
-            tvTitle.text = song.title
-            tvArtist.text = song.artist
+            if (tvTitle.text != song.title) {
+                tvTitle.text = song.title
+            }
+            if (tvArtist.text != song.artist) {
+                tvArtist.text = song.artist
+            }
             tvTitle.isSelected = true
             tvArtist.isSelected = true
 

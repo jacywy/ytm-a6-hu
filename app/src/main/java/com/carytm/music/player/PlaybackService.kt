@@ -11,6 +11,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -113,8 +114,10 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private var currentAlbumArt: Bitmap? = null
+    private var currentDurationMs: Long = 0L
 
     override fun onSongChanged(song: SongItem?) {
+        currentDurationMs = (song?.durationSec ?: 0L) * 1000L
         updatePlaybackState()
         updateMetadataAndNotification(song)
     }
@@ -129,7 +132,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, (song?.durationSec ?: 0L) * 1000L)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, currentDurationMs)
 
         mediaSession.setMetadata(metadataBuilder.build())
 
@@ -176,7 +179,42 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     }
 
     override fun onProgressUpdate(currentMs: Long, totalMs: Long) {
-        // Can be used for lockscreen seekbar
+        // 1. Update MediaMetadata duration if newly resolved or updated
+        if (totalMs > 0 && currentDurationMs != totalMs) {
+            currentDurationMs = totalMs
+            val song = MusicPlayer.getCurrentSong()
+            val title = song?.title ?: "CarYTM"
+            val artist = song?.artist ?: getString(R.string.now_playing)
+            val album = song?.albumName?.takeIf { it.isNotBlank() } ?: "YouTube Music"
+
+            val metadataBuilder = MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, totalMs)
+
+            currentAlbumArt?.let {
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, it)
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, it)
+            }
+            mediaSession.setMetadata(metadataBuilder.build())
+        }
+
+        // 2. Synchronize PlaybackState for car home launchers (e.g. DuduOS) and HUD
+        val isPlaying = MusicPlayer.isPlaying()
+        val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        val playbackState = PlaybackStateCompat.Builder()
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PAUSE or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackStateCompat.ACTION_SEEK_TO
+            )
+            .setState(state, currentMs, if (isPlaying) 1.0f else 0.0f, SystemClock.elapsedRealtime())
+            .build()
+
+        mediaSession.setPlaybackState(playbackState)
     }
 
     override fun onError(message: String) {
@@ -184,7 +222,8 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     }
 
     private fun updatePlaybackState() {
-        val state = if (MusicPlayer.isPlaying()) {
+        val isPlaying = MusicPlayer.isPlaying()
+        val state = if (isPlaying) {
             PlaybackStateCompat.STATE_PLAYING
         } else {
             PlaybackStateCompat.STATE_PAUSED
@@ -198,7 +237,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
                         PlaybackStateCompat.ACTION_SEEK_TO
             )
-            .setState(state, MusicPlayer.getCurrentPosition(), 1.0f)
+            .setState(state, MusicPlayer.getCurrentPosition(), if (isPlaying) 1.0f else 0.0f, SystemClock.elapsedRealtime())
             .build()
 
         mediaSession.setPlaybackState(playbackState)
@@ -246,6 +285,8 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             .setContentText(artist)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setShowWhen(false)
             .setOngoing(isPlaying)
             .addAction(R.drawable.ic_prev, getString(R.string.notification_action_prev), prevPendingIntent)
             .addAction(

@@ -541,6 +541,7 @@ object InnertubeApi {
                             title = title,
                             artist = artist,
                             durationText = duration,
+                            durationSec = parseDurationTextToSec(duration),
                             thumbnailUrl = thumb
                         )
                     )
@@ -612,6 +613,36 @@ object InnertubeApi {
                 }
             }
 
+            val fixedColumns = item.getAsJsonArray("fixedColumns")
+            if (fixedColumns != null && fixedColumns.size() > 0) {
+                val fixedCol = fixedColumns[0].asJsonObject
+                    .getAsJsonObject("musicResponsiveListItemFixedColumnRenderer")
+                    ?.getAsJsonObject("text")
+                val fixedText = extractTextFromRuns(fixedCol)
+                if (fixedText.contains(":")) {
+                    duration = fixedText
+                }
+            }
+
+            if (duration.isBlank() && flexColumns != null) {
+                for (col in flexColumns) {
+                    val runs = col.asJsonObject
+                        .getAsJsonObject("musicResponsiveListItemFlexColumnRenderer")
+                        ?.getAsJsonObject("text")
+                        ?.getAsJsonArray("runs")
+                    if (runs != null) {
+                        for (r in runs) {
+                            val txt = r.asJsonObject.get("text")?.asString?.trim() ?: ""
+                            if (txt.matches(Regex("""^\d{1,2}:\d{2}(:\d{2})?$"""))) {
+                                duration = txt
+                                break
+                            }
+                        }
+                    }
+                    if (duration.isNotBlank()) break
+                }
+            }
+
             val thumbnails = item.getAsJsonObject("thumbnail")
                 ?.getAsJsonObject("musicThumbnailRenderer")
                 ?.getAsJsonObject("thumbnail")
@@ -634,6 +665,7 @@ object InnertubeApi {
                     title = title,
                     artist = artist.takeIf { it.isNotBlank() } ?: "YouTube Music",
                     durationText = duration,
+                    durationSec = parseDurationTextToSec(duration),
                     thumbnailUrl = thumb
                 )
             }
@@ -745,5 +777,15 @@ object InnertubeApi {
             sb.append(run.get("text")?.asString ?: "")
         }
         return sb.toString().trim()
+    }
+
+    fun parseDurationTextToSec(durationStr: String): Long {
+        if (durationStr.isBlank()) return 0L
+        val parts = durationStr.split(":").mapNotNull { it.trim().toLongOrNull() }
+        return when (parts.size) {
+            2 -> parts[0] * 60L + parts[1]
+            3 -> parts[0] * 3600L + parts[1] * 60L + parts[2]
+            else -> 0L
+        }
     }
 }

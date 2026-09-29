@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
+import android.widget.ProgressBar
 import com.carytm.music.player.MusicPlayer
 import com.carytm.music.player.PlaybackService
 import com.carytm.music.util.LocaleHelper
@@ -28,6 +29,8 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     private lateinit var navBtnSettings: View
 
     private lateinit var miniPlayerContainer: View
+    private lateinit var miniPlayerProgress: ProgressBar
+    private lateinit var miniPlayerTime: TextView
     private lateinit var miniAlbumArt: ImageView
     private lateinit var miniSongTitle: TextView
     private lateinit var miniArtistName: TextView
@@ -74,6 +77,8 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         navBtnSettings = findViewById(R.id.nav_btn_settings)
 
         miniPlayerContainer = findViewById(R.id.mini_player_container)
+        miniPlayerProgress = findViewById(R.id.mini_player_progress)
+        miniPlayerTime = findViewById(R.id.mini_player_time)
         miniAlbumArt = findViewById(R.id.mini_album_art)
         miniSongTitle = findViewById(R.id.mini_song_title)
         miniArtistName = findViewById(R.id.mini_artist_name)
@@ -128,8 +133,12 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     private fun updateMiniPlayerUI(song: SongItem?, isPlaying: Boolean) {
         if (song != null) {
-            miniSongTitle.text = song.title
-            miniArtistName.text = song.artist
+            if (miniSongTitle.text != song.title) {
+                miniSongTitle.text = song.title
+            }
+            if (miniArtistName.text != song.artist) {
+                miniArtistName.text = song.artist
+            }
             miniSongTitle.isSelected = true
             miniArtistName.isSelected = true
             if (song.thumbnailUrl.isNotBlank()) {
@@ -140,6 +149,12 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
             } else {
                 miniAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
             }
+        } else {
+            miniSongTitle.text = getString(R.string.empty_queue)
+            miniArtistName.text = getString(R.string.app_name)
+            miniPlayerTime.text = ""
+            miniPlayerProgress.progress = 0
+            miniAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
         }
 
         miniBtnPlayPause.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
@@ -148,6 +163,10 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     override fun onSongChanged(song: SongItem?) {
         runOnUiThread {
             updateMiniPlayerUI(song, MusicPlayer.isPlaying())
+            if (song == null) {
+                miniPlayerTime.text = ""
+                miniPlayerProgress.progress = 0
+            }
         }
     }
 
@@ -159,7 +178,28 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     override fun onBuffering(isBuffering: Boolean) {}
 
-    override fun onProgressUpdate(currentMs: Long, totalMs: Long) {}
+    override fun onProgressUpdate(currentMs: Long, totalMs: Long) {
+        runOnUiThread {
+            if (totalMs > 0) {
+                miniPlayerTime.text = formatProgress(currentMs, totalMs)
+                val progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
+                miniPlayerProgress.progress = progress
+            } else {
+                miniPlayerTime.text = ""
+                miniPlayerProgress.progress = 0
+            }
+        }
+    }
+
+    private fun formatProgress(currentMs: Long, totalMs: Long): String {
+        val curSec = currentMs / 1000
+        val totSec = totalMs / 1000
+        val curMin = curSec / 60
+        val curS = curSec % 60
+        val totMin = totSec / 60
+        val totS = totSec % 60
+        return String.format("%d:%02d / %d:%02d", curMin, curS, totMin, totS)
+    }
 
     override fun onError(message: String) {
         runOnUiThread {

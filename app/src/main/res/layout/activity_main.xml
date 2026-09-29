@@ -165,87 +165,119 @@
         <LinearLayout
             android:id="@+id/mini_player_container"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/mini_player_height"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:background="@drawable/bg_mini_player"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
             android:clickable="true"
             android:focusable="true">
 
-            <!-- Album Art -->
-            <ImageView
-                android:id="@+id/mini_album_art"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_music_placeholder" />
+            <!-- Slim Progress Bar at the top of mini player -->
+            <ProgressBar
+                android:id="@+id/mini_player_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:max="1000"
+                android:progress="0"
+                android:progressTint="@color/primary"
+                android:progressBackgroundTint="@color/divider" />
 
-            <!-- Track Info -->
             <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/mini_player_height"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
 
-                <TextView
-                    android:id="@+id/mini_song_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
-                    android:singleLine="true"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:text="@string/empty_queue"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/text_size_title"
-                    android:textStyle="bold" />
+                <!-- Album Art -->
+                <ImageView
+                    android:id="@+id/mini_album_art"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_music_placeholder" />
 
-                <TextView
-                    android:id="@+id/mini_artist_name"
-                    android:layout_width="match_parent"
+                <!-- Track Info -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <com.carytm.music.ui.view.MarqueeTextView
+                        android:id="@+id/mini_song_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="marquee"
+                        android:marqueeRepeatLimit="marquee_forever"
+                        android:singleLine="true"
+                        android:scrollHorizontally="true"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:text="@string/empty_queue"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_size_title"
+                        android:textStyle="bold" />
+
+                    <com.carytm.music.ui.view.MarqueeTextView
+                        android:id="@+id/mini_artist_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="marquee"
+                        android:marqueeRepeatLimit="marquee_forever"
+                        android:singleLine="true"
+                        android:scrollHorizontally="true"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:text="@string/app_name"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/text_size_subtitle" />
+                </LinearLayout>
+
+                <!-- Playback Time Progress (e.g. 0:01 / 3:30) -->
+                <TextView
+                    android:id="@+id/mini_player_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
                     android:singleLine="true"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:text="@string/app_name"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="@dimen/text_size_subtitle" />
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"
+                    android:text="" />
+
+                <!-- Previous Button -->
+                <ImageButton
+                    android:id="@+id/mini_btn_prev"
+                    android:layout_width="@dimen/car_button_size"
+                    android:layout_height="@dimen/car_button_size"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_prev"
+                    app:tint="@color/text_primary" />
+
+                <!-- Play/Pause Button -->
+                <ImageButton
+                    android:id="@+id/mini_btn_play_pause"
+                    android:layout_width="@dimen/car_button_size"
+                    android:layout_height="@dimen/car_button_size"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_play"
+                    app:tint="@color/primary" />
+
+                <!-- Next Button -->
+                <ImageButton
+                    android:id="@+id/mini_btn_next"
+                    android:layout_width="@dimen/car_button_size"
+                    android:layout_height="@dimen/car_button_size"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_next"
+                    app:tint="@color/text_primary" />
+
             </LinearLayout>
-
-            <!-- Previous Button -->
-            <ImageButton
-                android:id="@+id/mini_btn_prev"
-                android:layout_width="@dimen/car_button_size"
-                android:layout_height="@dimen/car_button_size"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_prev"
-                app:tint="@color/text_primary" />
-
-            <!-- Play/Pause Button -->
-            <ImageButton
-                android:id="@+id/mini_btn_play_pause"
-                android:layout_width="@dimen/car_button_size"
-                android:layout_height="@dimen/car_button_size"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_play"
-                app:tint="@color/primary" />
-
-            <!-- Next Button -->
-            <ImageButton
-                android:id="@+id/mini_btn_next"
-                android:layout_width="@dimen/car_button_size"
-                android:layout_height="@dimen/car_button_size"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_next"
-                app:tint="@color/text_primary" />
 
         </LinearLayout>
 

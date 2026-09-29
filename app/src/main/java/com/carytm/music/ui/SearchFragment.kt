@@ -23,7 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class SearchFragment : Fragment() {
+class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     private lateinit var etSearchInput: EditText
     private lateinit var btnSearchSubmit: Button
@@ -42,10 +42,13 @@ class SearchFragment : Fragment() {
         rvSearchResults = view.findViewById(R.id.rv_search_results)
 
         rvSearchResults.layoutManager = LinearLayoutManager(context)
-        songAdapter = SongAdapter { song, index ->
+        songAdapter = SongAdapter { _, index ->
             MusicPlayer.playQueue(searchResults, index)
         }
         rvSearchResults.adapter = songAdapter
+
+        MusicPlayer.addListener(this)
+        songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
 
         btnSearchSubmit.setOnClickListener {
             performSearch()
@@ -76,10 +79,41 @@ class SearchFragment : Fragment() {
             searchResults.clear()
             searchResults.addAll(list)
             songAdapter.submitList(searchResults)
+            scrollToCurrentPlaying()
 
             if (list.isEmpty()) {
                 Toast.makeText(context, getString(R.string.search_empty), Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun scrollToCurrentPlaying() {
+        val currentVideoId = MusicPlayer.getCurrentSong()?.videoId ?: return
+        val index = searchResults.indexOfFirst { it.videoId == currentVideoId }
+        if (index >= 0) {
+            val lm = rvSearchResults.layoutManager as? LinearLayoutManager ?: return
+            val first = lm.findFirstCompletelyVisibleItemPosition()
+            val last = lm.findLastCompletelyVisibleItemPosition()
+            if (index < first || index > last) {
+                lm.scrollToPositionWithOffset(index, 40)
+            }
+        }
+    }
+
+    override fun onSongChanged(song: SongItem?) {
+        activity?.runOnUiThread {
+            songAdapter.setCurrentPlaying(song?.videoId)
+            scrollToCurrentPlaying()
+        }
+    }
+
+    override fun onPlayStateChanged(isPlaying: Boolean) {}
+    override fun onBuffering(isBuffering: Boolean) {}
+    override fun onProgressUpdate(currentMs: Long, totalMs: Long) {}
+    override fun onError(message: String) {}
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        MusicPlayer.removeListener(this)
     }
 }

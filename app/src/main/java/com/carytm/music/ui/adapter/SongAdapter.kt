@@ -24,6 +24,7 @@ class SongAdapter(
     }
 
     fun setCurrentPlaying(videoId: String?) {
+        if (currentPlayingVideoId == videoId) return
         currentPlayingVideoId = videoId
         notifyDataSetChanged()
     }

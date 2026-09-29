@@ -16,9 +16,8 @@ import com.carytm.music.ui.adapter.SongAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     private lateinit var rvContent: RecyclerView
     private lateinit var loading: ProgressBar
@@ -32,10 +31,13 @@ class HomeFragment : Fragment() {
         loading = view.findViewById(R.id.home_loading)
 
         rvContent.layoutManager = LinearLayoutManager(context)
-        songAdapter = SongAdapter { song, index ->
+        songAdapter = SongAdapter { _, index ->
             MusicPlayer.playQueue(songList, index)
         }
         rvContent.adapter = songAdapter
+
+        MusicPlayer.addListener(this)
+        songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
 
         loadHomeData()
         return view
@@ -44,11 +46,42 @@ class HomeFragment : Fragment() {
     private fun loadHomeData() {
         loading.visibility = View.VISIBLE
         scope.launch {
-            val (playlists, songs) = InnertubeApi.getHomeRecommendations()
+            val (_, songs) = InnertubeApi.getHomeRecommendations()
             loading.visibility = View.GONE
             songList.clear()
             songList.addAll(songs)
             songAdapter.submitList(songList)
+            scrollToCurrentPlaying()
         }
+    }
+
+    private fun scrollToCurrentPlaying() {
+        val currentVideoId = MusicPlayer.getCurrentSong()?.videoId ?: return
+        val index = songList.indexOfFirst { it.videoId == currentVideoId }
+        if (index >= 0) {
+            val lm = rvContent.layoutManager as? LinearLayoutManager ?: return
+            val first = lm.findFirstCompletelyVisibleItemPosition()
+            val last = lm.findLastCompletelyVisibleItemPosition()
+            if (index < first || index > last) {
+                lm.scrollToPositionWithOffset(index, 40)
+            }
+        }
+    }
+
+    override fun onSongChanged(song: SongItem?) {
+        activity?.runOnUiThread {
+            songAdapter.setCurrentPlaying(song?.videoId)
+            scrollToCurrentPlaying()
+        }
+    }
+
+    override fun onPlayStateChanged(isPlaying: Boolean) {}
+    override fun onBuffering(isBuffering: Boolean) {}
+    override fun onProgressUpdate(currentMs: Long, totalMs: Long) {}
+    override fun onError(message: String) {}
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        MusicPlayer.removeListener(this)
     }
 }
