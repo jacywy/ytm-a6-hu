@@ -2,6 +2,8 @@ package com.carytm.music.ui
 
 import android.content.Context
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +16,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.net.InnertubeApi
@@ -26,8 +29,10 @@ import kotlinx.coroutines.launch
 class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     private lateinit var etSearchInput: EditText
+    private lateinit var btnSearchClear: View
     private lateinit var btnSearchSubmit: Button
     private lateinit var searchLoading: ProgressBar
+    private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var rvSearchResults: RecyclerView
     private lateinit var songAdapter: SongAdapter
 
@@ -37,9 +42,16 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_search, container, false)
         etSearchInput = view.findViewById(R.id.et_search_input)
+        btnSearchClear = view.findViewById(R.id.btn_search_clear)
         btnSearchSubmit = view.findViewById(R.id.btn_search_submit)
         searchLoading = view.findViewById(R.id.search_loading)
+        swipeRefresh = view.findViewById(R.id.swipe_refresh_search)
         rvSearchResults = view.findViewById(R.id.rv_search_results)
+
+        swipeRefresh.setColorSchemeResources(R.color.primary)
+        swipeRefresh.setOnRefreshListener {
+            performSearch(isSwipe = true)
+        }
 
         rvSearchResults.layoutManager = LinearLayoutManager(context)
         songAdapter = SongAdapter { _, index ->
@@ -51,31 +63,58 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
         songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
 
         btnSearchSubmit.setOnClickListener {
-            performSearch()
+            performSearch(isSwipe = false)
         }
+
+        btnSearchClear.setOnClickListener {
+            etSearchInput.text?.clear()
+            etSearchInput.requestFocus()
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.showSoftInput(etSearchInput, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        etSearchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                btnSearchClear.visibility = if (!s.isNullOrEmpty()) View.VISIBLE else View.GONE
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+        btnSearchClear.visibility = if (etSearchInput.text.isNotEmpty()) View.VISIBLE else View.GONE
 
         etSearchInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                performSearch()
+                performSearch(isSwipe = false)
                 true
             } else false
+        }
+
+        if (searchResults.isNotEmpty()) {
+            songAdapter.submitList(searchResults)
+            scrollToCurrentPlaying()
         }
 
         return view
     }
 
-    private fun performSearch() {
+    private fun performSearch(isSwipe: Boolean = false) {
         val query = etSearchInput.text.toString().trim()
-        if (query.isBlank()) return
+        if (query.isBlank()) {
+            swipeRefresh.isRefreshing = false
+            return
+        }
 
         // Hide keyboard
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.hideSoftInputFromWindow(etSearchInput.windowToken, 0)
 
-        searchLoading.visibility = View.VISIBLE
+        if (!isSwipe) {
+            searchLoading.visibility = View.VISIBLE
+        }
         scope.launch {
             val list = InnertubeApi.search(query)
             searchLoading.visibility = View.GONE
+            swipeRefresh.isRefreshing = false
             searchResults.clear()
             searchResults.addAll(list)
             songAdapter.submitList(searchResults)

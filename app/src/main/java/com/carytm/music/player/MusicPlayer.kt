@@ -134,9 +134,9 @@ object MusicPlayer {
         scope.launch {
             while (isActive) {
                 exoPlayer?.let { player ->
-                    if (player.isPlaying) {
+                    if (player.isPlaying || isBuffering()) {
                         val cur = player.currentPosition
-                        val total = if (player.duration > 0) player.duration else 0
+                        val total = getDuration()
                         listeners.forEach { it.onProgressUpdate(cur, total) }
 
                         // Mark fully cached if user reaches near the end of the song
@@ -387,9 +387,15 @@ object MusicPlayer {
 
     fun isPlaying(): Boolean = exoPlayer?.isPlaying == true
 
+    fun isBuffering(): Boolean = isResolving || (exoPlayer?.playbackState == Player.STATE_BUFFERING)
+
     fun getCurrentPosition(): Long = exoPlayer?.currentPosition ?: 0
 
-    fun getDuration(): Long = exoPlayer?.duration?.coerceAtLeast(0) ?: 0
+    fun getDuration(): Long {
+        val d = exoPlayer?.duration ?: 0L
+        if (d > 0) return d
+        return (getCurrentSong()?.durationSec ?: 0L) * 1000L
+    }
 
     fun getCacheLimitMb(context: Context): Int {
         val prefs = context.getSharedPreferences("carytm_settings", Context.MODE_PRIVATE)

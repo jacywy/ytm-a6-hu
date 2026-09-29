@@ -38,6 +38,10 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     private lateinit var miniBtnPlayPause: ImageButton
     private lateinit var miniBtnNext: ImageButton
 
+    private val homeFragment by lazy { HomeFragment() }
+    private val libraryFragment by lazy { LibraryFragment() }
+    private val searchFragment by lazy { SearchFragment() }
+    private val settingsFragment by lazy { SettingsFragment() }
     private var activeFragment: Fragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +64,7 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         MusicPlayer.addListener(this)
 
         // Default open Home
-        switchFragment(HomeFragment(), navBtnHome)
+        switchFragment(homeFragment, navBtnHome)
 
         // Check for updates quietly after initial launch
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -88,18 +92,26 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     }
 
     private fun setupNavigation() {
-        navBtnHome.setOnClickListener { switchFragment(HomeFragment(), navBtnHome) }
-        navBtnLibrary.setOnClickListener { switchFragment(LibraryFragment(), navBtnLibrary) }
-        navBtnSearch.setOnClickListener { switchFragment(SearchFragment(), navBtnSearch) }
-        navBtnSettings.setOnClickListener { switchFragment(SettingsFragment(), navBtnSettings) }
+        navBtnHome.setOnClickListener { switchFragment(homeFragment, navBtnHome) }
+        navBtnLibrary.setOnClickListener { switchFragment(libraryFragment, navBtnLibrary) }
+        navBtnSearch.setOnClickListener { switchFragment(searchFragment, navBtnSearch) }
+        navBtnSettings.setOnClickListener { switchFragment(settingsFragment, navBtnSettings) }
     }
 
-    private fun switchFragment(fragment: Fragment, selectedNavView: View) {
-        activeFragment = fragment
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .commit()
+    private fun switchFragment(target: Fragment, selectedNavView: View) {
+        if (activeFragment == target) return
 
+        val transaction = supportFragmentManager.beginTransaction()
+        activeFragment?.let { transaction.hide(it) }
+
+        if (!target.isAdded) {
+            transaction.add(R.id.fragment_container, target)
+        } else {
+            transaction.show(target)
+        }
+        transaction.commit()
+
+        activeFragment = target
         resetNavHighlight()
         selectedNavView.setBackgroundResource(R.drawable.bg_nav_item_selected)
     }
@@ -148,6 +160,17 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
                     .into(miniAlbumArt)
             } else {
                 miniAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
+            }
+
+            // Sync current progress immediately
+            val totalMs = MusicPlayer.getDuration()
+            val currentMs = MusicPlayer.getCurrentPosition()
+            if (totalMs > 0) {
+                miniPlayerTime.text = formatProgress(currentMs, totalMs)
+                miniPlayerProgress.progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
+            } else {
+                miniPlayerTime.text = ""
+                miniPlayerProgress.progress = 0
             }
         } else {
             miniSongTitle.text = getString(R.string.empty_queue)

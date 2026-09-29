@@ -8,6 +8,7 @@ import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.net.InnertubeApi
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment(), MusicPlayer.PlaybackListener {
 
+    private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var rvContent: RecyclerView
     private lateinit var loading: ProgressBar
     private lateinit var songAdapter: SongAdapter
@@ -27,8 +29,14 @@ class HomeFragment : Fragment(), MusicPlayer.PlaybackListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
+        swipeRefresh = view.findViewById(R.id.swipe_refresh_home)
         rvContent = view.findViewById(R.id.rv_home_content)
         loading = view.findViewById(R.id.home_loading)
+
+        swipeRefresh.setColorSchemeResources(R.color.primary)
+        swipeRefresh.setOnRefreshListener {
+            loadHomeData(isSwipe = true)
+        }
 
         rvContent.layoutManager = LinearLayoutManager(context)
         songAdapter = SongAdapter { _, index ->
@@ -39,19 +47,30 @@ class HomeFragment : Fragment(), MusicPlayer.PlaybackListener {
         MusicPlayer.addListener(this)
         songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
 
-        loadHomeData()
+        if (songList.isEmpty()) {
+            loadHomeData(isSwipe = false)
+        } else {
+            songAdapter.submitList(songList)
+            scrollToCurrentPlaying()
+        }
+
         return view
     }
 
-    private fun loadHomeData() {
-        loading.visibility = View.VISIBLE
+    private fun loadHomeData(isSwipe: Boolean = false) {
+        if (!isSwipe && songList.isEmpty()) {
+            loading.visibility = View.VISIBLE
+        }
         scope.launch {
             val (_, songs) = InnertubeApi.getHomeRecommendations()
             loading.visibility = View.GONE
-            songList.clear()
-            songList.addAll(songs)
-            songAdapter.submitList(songList)
-            scrollToCurrentPlaying()
+            swipeRefresh.isRefreshing = false
+            if (songs.isNotEmpty()) {
+                songList.clear()
+                songList.addAll(songs)
+                songAdapter.submitList(songList)
+                scrollToCurrentPlaying()
+            }
         }
     }
 

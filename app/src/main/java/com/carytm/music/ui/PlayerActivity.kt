@@ -143,6 +143,31 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
         btnPlayPause.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
         updateShuffleUI(MusicPlayer.isShuffle)
+
+        // Immediately synchronize buffering and playback state
+        val isBuffering = MusicPlayer.isBuffering()
+        tvStatus.text = if (isBuffering) getString(R.string.playing_loading) else getString(R.string.now_playing)
+
+        // Immediately synchronize progress & duration
+        if (!isUserTrackingSeekBar) {
+            val totalMs = MusicPlayer.getDuration()
+            val currentMs = MusicPlayer.getCurrentPosition()
+            if (totalMs > 0) {
+                val progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
+                seekbar.progress = progress
+                tvCurrentTime.text = formatTime(currentMs)
+                tvTotalTime.text = formatTime(totalMs)
+            } else {
+                seekbar.progress = 0
+                tvCurrentTime.text = formatTime(currentMs)
+                tvTotalTime.text = "00:00"
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateUI(MusicPlayer.getCurrentSong(), MusicPlayer.isPlaying())
     }
 
     private fun updateShuffleUI(isShuffle: Boolean) {

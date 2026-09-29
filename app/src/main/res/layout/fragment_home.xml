@@ -24,13 +24,20 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
-    <!-- Tracks & Playlists RecyclerView (2 columns) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_home_content"
+    <!-- SwipeRefreshLayout and Tracks RecyclerView -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_home"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:scrollbars="vertical" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_home_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

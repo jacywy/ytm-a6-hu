@@ -83,7 +83,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 
 ### Download Pre-built APKs
 Download the latest APK release from the [GitHub Releases](https://github.com/jacywy/ytm-a6-hu/releases) page:
-- **Latest Release**: [v0.2.7 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.7/app-debug.apk)
+- **Latest Release**: [v0.2.8 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.8/app-debug.apk)
 
 ### Install via ADB (USB or Wi-Fi)
 ```bash
@@ -210,7 +210,7 @@ This project is licensed under the [GPL-3.0 License](LICENSE).
 
 ### 预编译 APK 下载
 进入本仓库的 [Releases](https://github.com/jacywy/ytm-a6-hu/releases) 页面下载最新构建：
-- **最新正式版本**：[v0.2.7 - app-debug.apk](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.7/app-debug.apk)
+- **最新正式版本**：[v0.2.8 - app-debug.apk](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.8/app-debug.apk)
 
 ### 命令行安装
 ```bash
