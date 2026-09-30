@@ -23,6 +23,7 @@ import androidx.appcompat.widget.AppCompatTextView
  * - 1.2s stationary pause at the end so driver can read feat/version/album info.
  * - Clean repeat loop.
  * - Completely lifecycle-aware (pauses on hide/detach, resumes on show).
+ * - Fully constructor-safe (guarded against Android TextView XML inflation setText() callback).
  */
 class MarqueeTextView @JvmOverloads constructor(
     context: Context,
@@ -30,8 +31,10 @@ class MarqueeTextView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : AppCompatTextView(context, attrs, defStyleAttr) {
 
-    private val marqueeHandler = Handler(Looper.getMainLooper())
-    private val extraEndPaddingPx: Int = (resources.displayMetrics.density * 36).toInt() // 36dp clearance
+    private var isInitialized = false
+    private val marqueeHandler by lazy { Handler(Looper.getMainLooper()) }
+    private val extraEndPaddingPx: Int
+        get() = (resources.displayMetrics.density * 36).toInt() // 36dp clearance
 
     private var currentScroll = 0
     private var maxScroll = 0
@@ -90,6 +93,8 @@ class MarqueeTextView @JvmOverloads constructor(
         isSingleLine = true
         ellipsize = null // Disable native AOSP marquee
         setHorizontallyScrolling(true)
+        isInitialized = true
+        postRestartMarquee()
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -100,12 +105,14 @@ class MarqueeTextView @JvmOverloads constructor(
     override fun setText(text: CharSequence?, type: BufferType?) {
         val oldText = getText()?.toString()
         super.setText(text, type)
-        if (oldText != text?.toString()) {
+        // Guard against super TextView constructor calling setText() before MarqueeTextView properties are initialized
+        if (isInitialized && oldText != text?.toString()) {
             postRestartMarquee()
         }
     }
 
     private fun postRestartMarquee() {
+        if (!isInitialized) return
         stopMarquee()
         currentScroll = 0
         scrollTo(0, 0)
@@ -114,6 +121,7 @@ class MarqueeTextView @JvmOverloads constructor(
     }
 
     private fun startMarqueeIfNeeded() {
+        if (!isInitialized) return
         stopMarquee()
         val textStr = text?.toString() ?: return
         if (textStr.isBlank()) return
@@ -141,8 +149,10 @@ class MarqueeTextView @JvmOverloads constructor(
     fun stopMarquee() {
         isMarqueeRunning = false
         currentState = MarqueeState.IDLE
-        marqueeHandler.removeCallbacks(tickRunnable)
-        marqueeHandler.removeCallbacks(starterRunnable)
+        if (isInitialized) {
+            marqueeHandler.removeCallbacks(tickRunnable)
+            marqueeHandler.removeCallbacks(starterRunnable)
+        }
     }
 
     override fun onAttachedToWindow() {

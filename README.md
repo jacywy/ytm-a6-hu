@@ -83,7 +83,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 
 ### Download Pre-built APKs
 Download the latest APK release from the [GitHub Releases](https://github.com/jacywy/ytm-a6-hu/releases) page:
-- **Latest Release**: [v0.3.0 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.0/app-debug.apk)
+- **Latest Release**: [v0.3.1 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.1/app-debug.apk)
 
 ### Install via ADB (USB or Wi-Fi)
 ```bash
@@ -278,6 +278,9 @@ CarYTM/
 ---
 
 ## 📝 更新日志 (Changelog)
+
+### v0.3.1 (2026-09-30)
+* **启动崩溃紧急修复 (Hotfix)**：修复 `MarqueeTextView` 在 XML 布局加载构造期间因父类 `TextView` 预先调用 `setText()` 触发的 `NullPointerException` 空指针崩溃，全面增加构造期安全保护。
 
 ### v0.3.0 (2026-09-30)
 * **跑马灯体验重构**：彻底弃用系统 `ValueAnimator`（车机 ROM 常将动画缩放设为 0 导致动画失效直接闪退到结尾），采用全新自主驱动的 `Handler` 25ms 定时轮询引擎，首尾停顿 1.2 秒，末尾预留 36dp 完整边界，实现平滑稳定的循环滚动。
