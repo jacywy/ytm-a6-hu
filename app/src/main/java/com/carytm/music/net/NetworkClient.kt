@@ -16,16 +16,21 @@ object NetworkClient {
 
     private var initialized = false
     lateinit var accountRepo: AccountRepository
+    lateinit var deviceAuthManager: com.carytm.music.auth.GoogleDeviceAuthManager
+    var appContext: Context? = null
 
     fun init(context: Context) {
         if (!initialized) {
+            val appCtx = context.applicationContext
+            appContext = appCtx
             // Install Conscrypt Security Provider to support TLS 1.3 & updated Google Root CAs on Android 6
             try {
                 Security.insertProviderAt(Conscrypt.newProvider(), 1)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            accountRepo = AccountRepository(context.applicationContext)
+            accountRepo = AccountRepository(appCtx)
+            deviceAuthManager = com.carytm.music.auth.GoogleDeviceAuthManager(appCtx)
             initialized = true
         }
     }
@@ -107,9 +112,15 @@ object NetworkClient {
                 requestBuilder.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
             }
 
-            // Only inject Authorization Bearer when explicitly requested (e.g. TV OAuth endpoints)
-            if (original.header("X-Use-OAuth") == "true") {
+            val isOAuthRequested = original.header("X-Use-OAuth") == "true"
+            if (isOAuthRequested) {
                 requestBuilder.removeHeader("X-Use-OAuth")
+
+                // Auto-refresh token if expired or about to expire in 5 minutes
+                if (::deviceAuthManager.isInitialized && accountRepo.hasRefreshToken && accountRepo.isTokenExpired()) {
+                    deviceAuthManager.refreshAccessTokenSync()
+                }
+
                 accountRepo.accessToken?.let { token ->
                     if (!original.headers.names().contains("Authorization")) {
                         requestBuilder.header("Authorization", "Bearer $token")
@@ -124,7 +135,23 @@ object NetworkClient {
                 }
             }
 
-            return chain.proceed(requestBuilder.build())
+            val response = chain.proceed(requestBuilder.build())
+
+            // Self-healing: If 401 Unauthorized occurs on OAuth request, force-refresh token and retry once
+            if (response.code == 401 && isOAuthRequested && ::deviceAuthManager.isInitialized && accountRepo.hasRefreshToken) {
+                response.close()
+                val refreshed = deviceAuthManager.refreshAccessTokenSync(force = true)
+                if (refreshed) {
+                    val retryBuilder = original.newBuilder()
+                    retryBuilder.removeHeader("X-Use-OAuth")
+                    accountRepo.accessToken?.let { newToken ->
+                        retryBuilder.header("Authorization", "Bearer $newToken")
+                    }
+                    return chain.proceed(retryBuilder.build())
+                }
+            }
+
+            return response
         }
     }
 }

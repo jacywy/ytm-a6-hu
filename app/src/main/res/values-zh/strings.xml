@@ -113,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">协议热维护说明</string>
-    <string name="settings_version_info">CarYTM v0.2.8 (API 23 车机专用版)</string>
+    <string name="settings_version_info">CarYTM v0.2.9 (API 23 车机专用版)</string>
     <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
     <string name="settings_check_update">检查新版本</string>
     <string name="settings_checking_update">正在检查更新...</string>
@@ -135,6 +135,12 @@
     <string name="cookie_server_msg_format">请在手机连接同 Wi-Fi 或车机热点后，使用手机浏览器访问：\n\nhttp://%s:8888\n\n在打开的网页中粘贴 Cookie 即可瞬间同步车机。</string>
     <string name="cookie_server_start_failed">启动服务失败: %s</string>
     <string name="cookie_saved_toast">Cookie 导入成功并已保存！</string>
+
+    <!-- Account Token Refresh -->
+    <string name="settings_account_auto_refresh_active">自动续期已激活</string>
+    <string name="settings_btn_refresh_token">刷新凭证</string>
+    <string name="settings_token_refreshed_toast">账号凭证已刷新并保持有效！</string>
+    <string name="settings_token_refresh_failed_toast">账号凭证刷新失败，请检查网络或重新扫码</string>
 
     <!-- General Dialog Buttons -->
     <string name="btn_cancel">取消</string>

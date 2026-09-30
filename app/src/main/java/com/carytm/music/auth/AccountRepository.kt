@@ -37,11 +37,27 @@ class AccountRepository(context: Context) {
         get() = prefs.getString("custom_client_secret", null)
         set(value) = prefs.edit().putString("custom_client_secret", value).apply()
 
+    var tokenExpiry: Long
+        get() = prefs.getLong("token_expiry", 0L)
+        set(value) = prefs.edit().putLong("token_expiry", value).apply()
+
     val isLoggedIn: Boolean
         get() = !accessToken.isNullOrBlank() || !cookies.isNullOrBlank()
 
     val hasCookies: Boolean
         get() = !cookies.isNullOrBlank()
+
+    val hasRefreshToken: Boolean
+        get() = !refreshToken.isNullOrBlank()
+
+    /**
+     * Check if the access token is expired or about to expire in bufferMs (default 5 minutes).
+     */
+    fun isTokenExpired(bufferMs: Long = 300_000L): Boolean {
+        if (accessToken.isNullOrBlank()) return true
+        if (tokenExpiry <= 0L) return false
+        return System.currentTimeMillis() >= (tokenExpiry - bufferMs)
+    }
 
     fun clear() {
         prefs.edit().clear().apply()

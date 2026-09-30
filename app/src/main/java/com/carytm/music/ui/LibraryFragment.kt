@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.carytm.music.R
 import com.carytm.music.auth.AccountRepository
 import com.carytm.music.model.PlaylistItem
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
 
 class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
 
+    private var swipeRefresh: SwipeRefreshLayout? = null
     private lateinit var layoutPlaylistsContainer: View
     private lateinit var cardOfflineMusic: View
     private lateinit var tvOfflineCount: TextView
@@ -66,6 +68,11 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         tvAccountStatus = view.findViewById(R.id.tv_account_status)
         btnLoginTrigger = view.findViewById(R.id.btn_login_trigger)
         rvPlaylists = view.findViewById(R.id.rv_library_playlists)
+        swipeRefresh = view.findViewById(R.id.swipe_refresh_library)
+        swipeRefresh?.setColorSchemeResources(R.color.primary)
+        swipeRefresh?.setOnRefreshListener {
+            refreshData(isSwipe = true)
+        }
 
         layoutPlaylistDetail = view.findViewById(R.id.layout_playlist_detail)
         btnDetailBack = view.findViewById(R.id.btn_detail_back)
@@ -259,13 +266,14 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         updateOfflineCardUI()
     }
 
-    fun refreshData() {
+    fun refreshData(isSwipe: Boolean = false) {
         updateOfflineCardUI()
         val repo = AccountRepository(requireContext())
         if (repo.isLoggedIn) {
             bannerLoginPrompt.visibility = View.GONE
-            loadUserPlaylists()
+            loadUserPlaylists(isSwipe)
         } else {
+            swipeRefresh?.isRefreshing = false
             bannerLoginPrompt.visibility = View.VISIBLE
             tvAccountStatus.text = getString(R.string.not_logged_in)
             playlistList.clear()
@@ -273,9 +281,16 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         }
     }
 
-    private fun loadUserPlaylists() {
+    private fun loadUserPlaylists(isSwipe: Boolean = false) {
         scope.launch {
+            if (isSwipe) {
+                val repo = AccountRepository(requireContext())
+                if (repo.hasRefreshToken) {
+                    com.carytm.music.auth.GoogleDeviceAuthManager(requireContext()).refreshAccessToken(force = true)
+                }
+            }
             val list = InnertubeApi.getUserPlaylists(requireContext())
+            swipeRefresh?.isRefreshing = false
             playlistList.clear()
             playlistList.addAll(list)
             playlistAdapter.submitList(playlistList)

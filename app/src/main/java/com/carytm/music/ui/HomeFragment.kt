@@ -57,12 +57,17 @@ class HomeFragment : Fragment(), MusicPlayer.PlaybackListener {
         return view
     }
 
+    private var refreshCount = 0
+
     private fun loadHomeData(isSwipe: Boolean = false) {
+        if (isSwipe) {
+            refreshCount++
+        }
         if (!isSwipe && songList.isEmpty()) {
             loading.visibility = View.VISIBLE
         }
         scope.launch {
-            val (_, songs) = InnertubeApi.getHomeRecommendations()
+            val (_, songs) = InnertubeApi.getHomeRecommendations(refreshCount)
             loading.visibility = View.GONE
             swipeRefresh.isRefreshing = false
             if (songs.isNotEmpty()) {

@@ -113,7 +113,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">Protocol &amp; Maintenance</string>
-    <string name="settings_version_info">CarYTM v0.2.8 (API 23 Car Special Edition)</string>
+    <string name="settings_version_info">CarYTM v0.2.9 (API 23 Car Special Edition)</string>
     <string name="settings_protocol_desc">This app decouples the NewPipeExtractor protocol engine. When YouTube updates its anti-scraping rules, simply update the version number in GitHub and commit; Actions will build a patched APK in 3 minutes.</string>
     <string name="settings_check_update">Check for Updates</string>
     <string name="settings_checking_update">Checking for updates...</string>
@@ -135,6 +135,12 @@
     <string name="cookie_server_msg_format">Connect your phone to the same Wi-Fi or car hotspot, then visit:\n\nhttp://%s:8888\n\nPaste your cookies into the page to sync instantly.</string>
     <string name="cookie_server_start_failed">Failed to start service: %s</string>
     <string name="cookie_saved_toast">Cookie imported and saved successfully!</string>
+
+    <!-- Account Token Refresh -->
+    <string name="settings_account_auto_refresh_active">Auto-refresh Active</string>
+    <string name="settings_btn_refresh_token">Refresh Token</string>
+    <string name="settings_token_refreshed_toast">Account credentials renewed successfully!</string>
+    <string name="settings_token_refresh_failed_toast">Failed to refresh token. Please check network or re-authorize.</string>
 
     <!-- General Dialog Buttons -->
     <string name="btn_cancel">Cancel</string>

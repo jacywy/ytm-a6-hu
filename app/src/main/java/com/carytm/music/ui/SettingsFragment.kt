@@ -22,6 +22,7 @@ class SettingsFragment : Fragment() {
     private lateinit var tvAccountStatus: TextView
     private lateinit var btnLogin: Button
     private lateinit var btnCookie: Button
+    private lateinit var btnRefreshToken: Button
     private lateinit var btnLogout: Button
     private lateinit var rgAudioQuality: RadioGroup
     private lateinit var rbM4a: RadioButton
@@ -40,6 +41,7 @@ class SettingsFragment : Fragment() {
         tvAccountStatus = view.findViewById(R.id.tv_settings_account)
         btnLogin = view.findViewById(R.id.btn_settings_login)
         btnCookie = view.findViewById(R.id.btn_settings_cookie)
+        btnRefreshToken = view.findViewById(R.id.btn_settings_refresh_token)
         btnLogout = view.findViewById(R.id.btn_settings_logout)
         rgAudioQuality = view.findViewById(R.id.rg_audio_quality)
         rbM4a = view.findViewById(R.id.rb_quality_m4a)
@@ -77,6 +79,20 @@ class SettingsFragment : Fragment() {
             repo.clear()
             updateAccountUI()
             Toast.makeText(context, getString(R.string.settings_logout_toast), Toast.LENGTH_SHORT).show()
+        }
+
+        btnRefreshToken.setOnClickListener {
+            val authManager = com.carytm.music.auth.GoogleDeviceAuthManager(requireContext())
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                Toast.makeText(context, "正在验证并刷新账号凭证...", Toast.LENGTH_SHORT).show()
+                val success = authManager.refreshAccessToken(force = true)
+                updateAccountUI()
+                if (success) {
+                    Toast.makeText(context, getString(R.string.settings_token_refreshed_toast), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, getString(R.string.settings_token_refresh_failed_toast), Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         btnSetCacheSize.setOnClickListener {
@@ -171,12 +187,20 @@ class SettingsFragment : Fragment() {
     private fun updateAccountUI() {
         val repo = AccountRepository(requireContext())
         if (repo.isLoggedIn) {
-            val name = repo.accountName ?: (if (!repo.cookies.isNullOrBlank()) getString(R.string.settings_account_cookie_imported) else getString(R.string.settings_account_tv_auth))
-            tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, name)
+            val typeStr = if (repo.hasRefreshToken) {
+                getString(R.string.settings_account_tv_auth) + " (" + getString(R.string.settings_account_auto_refresh_active) + ")"
+            } else if (!repo.cookies.isNullOrBlank()) {
+                getString(R.string.settings_account_cookie_imported)
+            } else {
+                repo.accountName ?: getString(R.string.settings_account_tv_auth)
+            }
+            tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, typeStr)
             btnLogout.visibility = View.VISIBLE
+            btnRefreshToken.visibility = if (repo.hasRefreshToken) View.VISIBLE else View.GONE
         } else {
             tvAccountStatus.text = getString(R.string.not_logged_in)
             btnLogout.visibility = View.GONE
+            btnRefreshToken.visibility = View.GONE
         }
     }
 

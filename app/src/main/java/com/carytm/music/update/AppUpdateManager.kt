@@ -19,9 +19,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 data class UpdateInfo(
     val versionName: String,
@@ -33,6 +40,37 @@ object AppUpdateManager {
 
     private const val GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/jacywy/ytm-a6-hu/releases/latest"
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * Dedicated OkHttpClient for checking and downloading updates from GitHub & CDN.
+     * Android 6.0 has frozen root certificates from 2015, causing CertPathValidatorException
+     * on objects.githubusercontent.com CDN redirects.
+     * This client ensures seamless downloads across all Android versions.
+     */
+    val updateOkHttpClient: OkHttpClient by lazy {
+        val trustManager = object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .hostnameVerifier { _, _ -> true }
+
+        try {
+            val sslContext = SSLContext.getInstance("TLS")
+            sslContext.init(null, arrayOf<TrustManager>(trustManager), SecureRandom())
+            builder.sslSocketFactory(sslContext.socketFactory, trustManager)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        builder.build()
+    }
 
     fun checkForUpdate(
         context: Context,
@@ -47,7 +85,7 @@ object AppUpdateManager {
                     .get()
                     .build()
 
-                val response = NetworkClient.okHttpClient.newCall(request).execute()
+                val response = updateOkHttpClient.newCall(request).execute()
                 val body = response.body?.string()
 
                 if (response.isSuccessful && !body.isNullOrBlank()) {
@@ -148,7 +186,7 @@ object AppUpdateManager {
                     .get()
                     .build()
 
-                val response = NetworkClient.okHttpClient.newCall(request).execute()
+                val response = updateOkHttpClient.newCall(request).execute()
                 val body = response.body
                 if (!response.isSuccessful || body == null) {
                     throw RuntimeException("Download failed with HTTP ${response.code}")

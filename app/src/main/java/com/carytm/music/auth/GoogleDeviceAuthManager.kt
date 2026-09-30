@@ -99,7 +99,11 @@ class GoogleDeviceAuthManager(private val context: Context) {
                         val tokenResponse = gson.fromJson(body, TokenResponse::class.java)
                         if (response.isSuccessful && !tokenResponse.accessToken.isNullOrEmpty()) {
                             accountRepo.accessToken = tokenResponse.accessToken
-                            accountRepo.refreshToken = tokenResponse.refreshToken
+                            if (!tokenResponse.refreshToken.isNullOrBlank()) {
+                                accountRepo.refreshToken = tokenResponse.refreshToken
+                            }
+                            val expiresInSec = tokenResponse.expiresIn ?: 3600
+                            accountRepo.tokenExpiry = System.currentTimeMillis() + expiresInSec * 1000L
                             accountRepo.accountName = "Google Account"
                             withContext(Dispatchers.Main) {
                                 onSuccess(tokenResponse)
@@ -122,6 +126,69 @@ class GoogleDeviceAuthManager(private val context: Context) {
                     e.printStackTrace()
                 }
             }
+        }
+    }
+
+    /**
+     * Silently refreshes the OAuth access token using the stored refresh_token.
+     * Returns true if the token is valid or successfully renewed.
+     */
+    suspend fun refreshAccessToken(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {
+        val refreshToken = accountRepo.refreshToken
+        if (refreshToken.isNullOrBlank()) {
+            return@withContext false
+        }
+
+        if (!force && !accountRepo.isTokenExpired()) {
+            return@withContext true
+        }
+
+        return@withContext refreshAccessTokenSync(force)
+    }
+
+    /**
+     * Synchronous version for interceptors or blocking tasks
+     */
+    @Synchronized
+    fun refreshAccessTokenSync(force: Boolean = false): Boolean {
+        val refreshToken = accountRepo.refreshToken ?: return false
+        if (!force && !accountRepo.isTokenExpired()) return true
+
+        return try {
+            val payload = mapOf(
+                "client_id" to effectiveClientId,
+                "client_secret" to effectiveClientSecret,
+                "refresh_token" to refreshToken,
+                "grant_type" to "refresh_token"
+            )
+            val jsonBody = gson.toJson(payload).toRequestBody("application/json; charset=utf-8".toMediaType())
+            val request = Request.Builder()
+                .url(TOKEN_URL)
+                .post(jsonBody)
+                .build()
+
+            val response = NetworkClient.okHttpClient.newCall(request).execute()
+            val body = response.body?.string() ?: return false
+            if (response.isSuccessful) {
+                val tokenResponse = gson.fromJson(body, TokenResponse::class.java)
+                if (!tokenResponse.accessToken.isNullOrBlank()) {
+                    accountRepo.accessToken = tokenResponse.accessToken
+                    val expiresInSec = tokenResponse.expiresIn ?: 3600
+                    accountRepo.tokenExpiry = System.currentTimeMillis() + expiresInSec * 1000L
+                    if (!tokenResponse.refreshToken.isNullOrBlank()) {
+                        accountRepo.refreshToken = tokenResponse.refreshToken
+                    }
+                    Log.d("CarYTM_Auth", "Access token successfully refreshed! Valid for ${expiresInSec}s")
+                    true
+                } else false
+            } else {
+                Log.e("CarYTM_Auth", "Token refresh failed: ${response.code} $body")
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("CarYTM_Auth", "Token refresh exception: ${e.message}")
+            false
         }
     }
 

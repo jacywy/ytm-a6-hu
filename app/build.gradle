@@ -11,8 +11,8 @@ android {
         applicationId "com.carytm.music"
         minSdk 23
         targetSdk 34
-        versionCode 9
-        versionName "0.2.8"
+        versionCode 10
+        versionName "0.2.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true

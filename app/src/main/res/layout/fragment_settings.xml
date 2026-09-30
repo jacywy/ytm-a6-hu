@@ -59,6 +59,16 @@
                     android:textColor="@color/text_secondary" />
 
                 <Button
+                    android:id="@+id/btn_settings_refresh_token"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/settings_btn_refresh_token"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+
+                <Button
                     android:id="@+id/btn_settings_logout"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"

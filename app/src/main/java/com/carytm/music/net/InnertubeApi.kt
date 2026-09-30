@@ -80,33 +80,52 @@ object InnertubeApi {
         return@withContext list.distinctBy { it.videoId }
     }
 
-    suspend fun getHomeRecommendations(): Pair<List<PlaylistItem>, List<SongItem>> = withContext(Dispatchers.IO) {
+    private val discoveryThemes = listOf(
+        "Top Hits",
+        "车载音乐 热歌",
+        "华语流行 精选",
+        "Billboard Hot 100",
+        "经典老歌 流行",
+        "Driving Road Trip Pop",
+        "抖音热歌 流行",
+        "Chill Acoustic Pop",
+        "欧美金曲 精选",
+        "EDM Party Hits"
+    )
+
+    suspend fun getHomeRecommendations(refreshIndex: Int = 0): Pair<List<PlaylistItem>, List<SongItem>> = withContext(Dispatchers.IO) {
         val playlists = mutableListOf<PlaylistItem>()
         val songs = mutableListOf<SongItem>()
+
+        // Rotate through diverse browse endpoints based on refresh count
+        val browseEndpoints = listOf("FEmusic_home", "FEmusic_explore", "FEmusic_charts", "FEmusic_new_releases")
+        val primaryBrowseId = browseEndpoints[Math.abs(refreshIndex) % browseEndpoints.size]
+        val secondaryBrowseId = browseEndpoints[(Math.abs(refreshIndex) + 1) % browseEndpoints.size]
+
         try {
-            // 1. Fetch Top Charts so Home is guaranteed to have hot music
-            val chartsPayload = createBaseContext()
-            chartsPayload.addProperty("browseId", "FEmusic_charts")
-            val chartsReq = Request.Builder()
+            // 1. Fetch Primary Browse endpoint
+            val p1 = createBaseContext()
+            p1.addProperty("browseId", primaryBrowseId)
+            val r1 = Request.Builder()
                 .url("$BASE_URL/browse")
-                .post(chartsPayload.toString().toRequestBody(JSON_MEDIA_TYPE))
+                .post(p1.toString().toRequestBody(JSON_MEDIA_TYPE))
                 .build()
-            val chartsResp = NetworkClient.okHttpClient.newCall(chartsReq).execute()
-            chartsResp.body?.string()?.let { b ->
+            val resp1 = NetworkClient.okHttpClient.newCall(r1).execute()
+            resp1.body?.string()?.let { b ->
                 val json = JsonParser.parseString(b).asJsonObject
                 parseResponsiveItems(json, songs)
                 parseTwoRowItems(json, playlists)
             }
 
-            // 2. Fetch Home personalized / recommendations
-            val homePayload = createBaseContext()
-            homePayload.addProperty("browseId", "FEmusic_home")
-            val homeReq = Request.Builder()
+            // 2. Fetch Secondary Browse endpoint
+            val p2 = createBaseContext()
+            p2.addProperty("browseId", secondaryBrowseId)
+            val r2 = Request.Builder()
                 .url("$BASE_URL/browse")
-                .post(homePayload.toString().toRequestBody(JSON_MEDIA_TYPE))
+                .post(p2.toString().toRequestBody(JSON_MEDIA_TYPE))
                 .build()
-            val homeResp = NetworkClient.okHttpClient.newCall(homeReq).execute()
-            homeResp.body?.string()?.let { b ->
+            val resp2 = NetworkClient.okHttpClient.newCall(r2).execute()
+            resp2.body?.string()?.let { b ->
                 val json = JsonParser.parseString(b).asJsonObject
                 parseResponsiveItems(json, songs)
                 parseTwoRowItems(json, playlists)
@@ -115,22 +134,39 @@ object InnertubeApi {
             e.printStackTrace()
         }
 
-        // 3. Fallback if songs still empty
-        if (songs.isEmpty()) {
+        // 3. Diversified fallback / supplement
+        if (songs.size < 15) {
             try {
-                val fallbackSongs = StreamResolver.searchSongs("Top Hits")
+                val theme = discoveryThemes[Math.abs(refreshIndex) % discoveryThemes.size]
+                val fallbackSongs = StreamResolver.searchSongs(theme)
                 songs.addAll(fallbackSongs)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        return@withContext Pair(playlists.distinctBy { it.playlistId }, songs.distinctBy { it.videoId })
+        // If refreshed, provide healthy variety by shuffling candidates beyond top hits
+        val distinctSongs = songs.distinctBy { it.videoId }
+        val finalSongs = if (distinctSongs.size > 8) {
+            val head = distinctSongs.take(3)
+            val tail = distinctSongs.drop(3).shuffled()
+            head + tail
+        } else {
+            distinctSongs
+        }
+
+        return@withContext Pair(playlists.distinctBy { it.playlistId }, finalSongs)
     }
 
     suspend fun getUserPlaylists(context: Context): List<PlaylistItem> = withContext(Dispatchers.IO) {
         val list = mutableListOf<PlaylistItem>()
         val repo = AccountRepository(context)
+        val authManager = com.carytm.music.auth.GoogleDeviceAuthManager(context)
+
+        // Pre-check: If user is logged in with OAuth and token is expiring, proactively refresh
+        if (repo.hasRefreshToken && repo.isTokenExpired()) {
+            authManager.refreshAccessToken()
+        }
 
         // Standard Default Playlists
         list.add(
@@ -152,8 +188,7 @@ object InnertubeApi {
             )
         )
 
-        // Case A: Google TV OAuth Login
-        repo.accessToken?.let {
+        val fetchTvEndpoints: () -> Unit = {
             // 1. Fetch TV Library landing (FEmy_youtube)
             try {
                 val payload = createTvContext()
@@ -197,6 +232,11 @@ object InnertubeApi {
             }
         }
 
+        // Case A: Google TV OAuth Login
+        if (!repo.accessToken.isNullOrBlank()) {
+            fetchTvEndpoints()
+        }
+
         // Case B: Cookie Login (or if logged in)
         if (repo.hasCookies || repo.isLoggedIn) {
             try {
@@ -218,6 +258,15 @@ object InnertubeApi {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+
+        // Self-healing: If user is logged in (hasRefreshToken) but only the 2 default playlists were retrieved,
+        // force-refresh token and retry fetching user playlists!
+        if (list.size <= 2 && repo.hasRefreshToken) {
+            val refreshed = authManager.refreshAccessToken(force = true)
+            if (refreshed) {
+                fetchTvEndpoints()
             }
         }
 
