@@ -46,6 +46,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
                     android:backgroundTint="@color/primary"
+                    android:singleLine="true"
+                    android:maxLines="1"
                     android:text="@string/settings_login_btn"
                     android:textColor="@color/text_primary" />
 
@@ -55,6 +57,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
                     android:layout_marginStart="12dp"
+                    android:singleLine="true"
+                    android:maxLines="1"
                     android:text="@string/settings_cookie_btn"
                     android:textColor="@color/text_secondary" />
 
@@ -63,7 +67,8 @@
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:layout_marginStart="12dp"
+                    android:singleLine="true"
+                    android:maxLines="1"
                     android:text="@string/settings_btn_refresh_token"
                     android:textColor="@color/text_secondary"
                     android:visibility="gone" />
@@ -74,6 +79,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
                     android:layout_marginStart="12dp"
+                    android:singleLine="true"
+                    android:maxLines="1"
                     android:text="@string/settings_logout"
                     android:textColor="@color/primary_light"
                     android:visibility="gone" />

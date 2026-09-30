@@ -142,6 +142,10 @@
     <string name="settings_token_refreshed_toast">Account credentials renewed successfully!</string>
     <string name="settings_token_refresh_failed_toast">Failed to refresh token. Please check network or re-authorize.</string>
 
+    <!-- Liked Songs Toasts -->
+    <string name="toast_added_to_liked">Added to Liked Songs</string>
+    <string name="toast_removed_from_liked">Removed from Liked Songs</string>
+
     <!-- General Dialog Buttons -->
     <string name="btn_cancel">Cancel</string>
     <string name="btn_confirm">OK</string>

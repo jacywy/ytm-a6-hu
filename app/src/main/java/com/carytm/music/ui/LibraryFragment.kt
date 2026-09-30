@@ -160,10 +160,21 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         loadTracksJob = scope.launch {
             val tracks = InnertubeApi.getPlaylistTracks(playlist.playlistId)
             pbDetailLoading.visibility = View.GONE
-            if (tracks.isNotEmpty()) {
+            val finalTracks = if (playlist.playlistId == "LM") {
+                val ctx = context
+                if (tracks.isNotEmpty() && ctx != null) {
+                    com.carytm.music.player.LikedRepository.syncFromRemote(ctx, tracks)
+                }
+                val localLiked = if (ctx != null) com.carytm.music.player.LikedRepository.getLikedSongs(ctx) else emptyList()
+                (tracks + localLiked).distinctBy { it.videoId }
+            } else {
+                tracks
+            }
+
+            if (finalTracks.isNotEmpty()) {
                 currentTracks.clear()
-                currentTracks.addAll(tracks)
-                tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, tracks.size)
+                currentTracks.addAll(finalTracks)
+                tvDetailSubtitle.text = getString(R.string.tracks_count_format, playlist.author, finalTracks.size)
                 songAdapter.submitList(currentTracks)
                 songAdapter.setCurrentPlaying(MusicPlayer.getCurrentSong()?.videoId)
                 scrollToCurrentPlayingTrack()

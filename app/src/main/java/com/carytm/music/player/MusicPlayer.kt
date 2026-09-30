@@ -50,6 +50,9 @@ object MusicPlayer {
     // Cache recently resolved direct audio stream URLs in memory to avoid redundant extraction
     private val resolvedUrlCache = mutableMapOf<String, String>()
 
+    private var pendingResumePositionMs: Long = 0L
+    private var lastSavedPositionMs: Long = 0L
+
     interface PlaybackListener {
         fun onSongChanged(song: SongItem?)
         fun onPlayStateChanged(isPlaying: Boolean)
@@ -61,7 +64,18 @@ object MusicPlayer {
     private val listeners = mutableListOf<PlaybackListener>()
 
     fun addListener(l: PlaybackListener) {
-        if (!listeners.contains(l)) listeners.add(l)
+        if (!listeners.contains(l)) {
+            listeners.add(l)
+            getCurrentSong()?.let { song ->
+                l.onSongChanged(song)
+                val pos = getCurrentPosition()
+                val dur = getDuration()
+                if (dur > 0L) {
+                    l.onProgressUpdate(pos, dur)
+                }
+                l.onPlayStateChanged(isPlaying())
+            }
+        }
     }
 
     fun removeListener(l: PlaybackListener) {
@@ -128,6 +142,17 @@ object MusicPlayer {
 
         exoPlayer = player
         startProgressTracker()
+
+        // Restore previous playback state if available (in paused state)
+        val saved = PlaybackStateManager.restoreState(context)
+        if (saved != null) {
+            queue.clear()
+            queue.addAll(saved.queue)
+            currentIndex = saved.currentIndex
+            isShuffle = saved.isShuffle
+            pendingResumePositionMs = saved.positionMs
+            lastSavedPositionMs = saved.positionMs
+        }
     }
 
     private fun startProgressTracker() {
@@ -138,6 +163,12 @@ object MusicPlayer {
                         val cur = player.currentPosition
                         val total = getDuration()
                         listeners.forEach { it.onProgressUpdate(cur, total) }
+
+                        // Save progress periodically every ~5 seconds during active playback
+                        if (player.isPlaying && Math.abs(cur - lastSavedPositionMs) >= 5000L) {
+                            lastSavedPositionMs = cur
+                            appContext?.let { ctx -> PlaybackStateManager.saveProgress(ctx, cur) }
+                        }
 
                         // Mark fully cached if user reaches near the end of the song
                         if (total > 15000L && cur >= (total - 5000L)) {
@@ -160,6 +191,7 @@ object MusicPlayer {
         if (!enabled) {
             nextShuffleIndex = -1
         }
+        appContext?.let { ctx -> PlaybackStateManager.saveState(ctx, queue, currentIndex, getCurrentPosition(), isShuffle) }
     }
 
     fun toggleShuffle(): Boolean {
@@ -167,10 +199,12 @@ object MusicPlayer {
         if (!isShuffle) {
             nextShuffleIndex = -1
         }
+        appContext?.let { ctx -> PlaybackStateManager.saveState(ctx, queue, currentIndex, getCurrentPosition(), isShuffle) }
         return isShuffle
     }
 
     fun playQueue(songs: List<SongItem>, startIndex: Int = 0) {
+        pendingResumePositionMs = 0L
         queue.clear()
         queue.addAll(songs)
         currentIndex = startIndex.coerceIn(0, (songs.size - 1).coerceAtLeast(0))
@@ -178,16 +212,23 @@ object MusicPlayer {
     }
 
     fun playSingle(song: SongItem) {
+        pendingResumePositionMs = 0L
         queue.clear()
         queue.add(song)
         currentIndex = 0
         playCurrent()
     }
 
-    private fun playCurrent() {
+    private fun playCurrent(seekPositionMs: Long? = null) {
         if (currentIndex !in queue.indices) return
         val song = queue[currentIndex]
-        appContext?.let { OfflineRepository.markSongStarted(it, song) }
+        val startPos = seekPositionMs ?: if (pendingResumePositionMs > 0L) pendingResumePositionMs else 0L
+        pendingResumePositionMs = 0L
+        lastSavedPositionMs = startPos
+        appContext?.let { ctx ->
+            OfflineRepository.markSongStarted(ctx, song)
+            PlaybackStateManager.saveState(ctx, queue, currentIndex, startPos, isShuffle)
+        }
 
         // 1. Cut off current playing audio IMMEDIATELY so previous song stops
         exoPlayer?.stop()
@@ -253,6 +294,9 @@ object MusicPlayer {
 
                 player.setMediaSource(mediaSource)
                 player.prepare()
+                if (startPos > 0L) {
+                    player.seekTo(startPos)
+                }
                 player.play()
             }
 
@@ -346,16 +390,38 @@ object MusicPlayer {
     }
 
     fun play() {
-        exoPlayer?.play()
+        exoPlayer?.let { player ->
+            if (player.playbackState == Player.STATE_IDLE || player.currentMediaItem == null) {
+                if (getCurrentSong() != null) {
+                    playCurrent(seekPositionMs = pendingResumePositionMs)
+                    return
+                }
+            }
+            player.play()
+        }
     }
 
     fun pause() {
-        exoPlayer?.pause()
+        exoPlayer?.let { player ->
+            player.pause()
+            appContext?.let { ctx -> PlaybackStateManager.saveProgress(ctx, getCurrentPosition()) }
+        }
     }
 
     fun togglePlayPause() {
-        exoPlayer?.let {
-            if (it.isPlaying) it.pause() else it.play()
+        exoPlayer?.let { player ->
+            if (player.playbackState == Player.STATE_IDLE || player.currentMediaItem == null) {
+                if (getCurrentSong() != null) {
+                    playCurrent(seekPositionMs = pendingResumePositionMs)
+                    return
+                }
+            }
+            if (player.isPlaying) {
+                player.pause()
+                appContext?.let { ctx -> PlaybackStateManager.saveProgress(ctx, getCurrentPosition()) }
+            } else {
+                player.play()
+            }
         }
     }
 
@@ -389,7 +455,13 @@ object MusicPlayer {
 
     fun isBuffering(): Boolean = isResolving || (exoPlayer?.playbackState == Player.STATE_BUFFERING)
 
-    fun getCurrentPosition(): Long = exoPlayer?.currentPosition ?: 0
+    fun getCurrentPosition(): Long {
+        val player = exoPlayer
+        if (player == null || player.currentMediaItem == null) {
+            if (pendingResumePositionMs > 0L) return pendingResumePositionMs
+        }
+        return player?.currentPosition ?: 0L
+    }
 
     fun getDuration(): Long {
         val d = exoPlayer?.duration ?: 0L

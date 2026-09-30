@@ -83,7 +83,7 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 
 ### Download Pre-built APKs
 Download the latest APK release from the [GitHub Releases](https://github.com/jacywy/ytm-a6-hu/releases) page:
-- **Latest Release**: [v0.2.8 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.8/app-debug.apk)
+- **Latest Release**: [v0.3.0 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.0/app-debug.apk)
 
 ### Install via ADB (USB or Wi-Fi)
 ```bash
@@ -274,6 +274,24 @@ CarYTM/
 │   └── proguard-rules.pro          # Conscrypt、ExoPlayer、NewPipe 混淆防劣化规则
 └── build.gradle                    # 顶层构建文件，统一集中管理 Extractor 协议引擎版本
 ```
+
+---
+
+## 📝 更新日志 (Changelog)
+
+### v0.3.0 (2026-09-30)
+* **跑马灯体验重构**：彻底弃用系统 `ValueAnimator`（车机 ROM 常将动画缩放设为 0 导致动画失效直接闪退到结尾），采用全新自主驱动的 `Handler` 25ms 定时轮询引擎，首尾停顿 1.2 秒，末尾预留 36dp 完整边界，实现平滑稳定的循环滚动。
+* **账号凭证与歌单数据迁移修复**：重构覆盖升级时的数据迁移逻辑，旧版本升级后若无凭证过期时间将自动触发静默续期；进入歌单若仅剩系统预设歌单将自动自愈拉取。
+* **车载设置界面排版优化**：精简按钮文案，在已登录状态下隐藏多余的“扫码登录”与“Cookie 导入”按钮，避免在窄屏车机上文字被挤压换行。
+* **歌曲“喜欢 / 收藏”功能上线**：播放器界面心形按钮全面生效，支持本地收藏持久化与离线曲库访问；登录状态下全自动同步至 YouTube Music 云端。
+* **关机与退出记忆续播**：新增 `PlaybackStateManager`，实时持久化播放列表与进度（每 5 秒自动保存）。关机或退出后下次打开自动恢复上次播放的歌曲与位置（保持暂停，手动按播放即恢复）。
+* **应用内在线更新日志净化**：更新弹窗中自动过滤 GitHub 比较链接与冗余信息，清晰展示各版本具体功能 commit 说明。
+
+### v0.2.9 (2026-09-30)
+* **Android 6.0 车机在线更新下载修复**：内置针对 GitHub CDN 证书重定向的专用 TrustManager，彻底解决车机端解析更新包时的证书报错。
+* **账号静默续期与凭证刷新**：实现基于 Refresh Token 的静默自动刷新机制与设置中心手动刷新凭证入口。
+* **播放界面黄金比例调整**：针对车机窄屏将左侧封面与右侧控制区比例调优为 0.36 : 0.64。
+* **首页推荐随机度增强**：下拉刷新融入多样化探索主题，短时间刷新推荐列表更具随机性。
 
 ---
 

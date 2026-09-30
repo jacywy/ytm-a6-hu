@@ -198,10 +198,14 @@ class SettingsFragment : Fragment() {
                 repo.accountName ?: getString(R.string.settings_account_tv_auth)
             }
             tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, typeStr)
+            btnLogin.visibility = View.GONE
+            btnCookie.visibility = View.GONE
             btnLogout.visibility = View.VISIBLE
             btnRefreshToken.visibility = if (repo.hasRefreshToken) View.VISIBLE else View.GONE
         } else {
             tvAccountStatus.text = getString(R.string.not_logged_in)
+            btnLogin.visibility = View.VISIBLE
+            btnCookie.visibility = View.VISIBLE
             btnLogout.visibility = View.GONE
             btnRefreshToken.visibility = View.GONE
         }

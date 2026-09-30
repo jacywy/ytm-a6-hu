@@ -837,4 +837,36 @@ object InnertubeApi {
             else -> 0L
         }
     }
+
+    /**
+     * Send like or remove-like request to YouTube Music InnerTube API.
+     */
+    suspend fun setSongLiked(videoId: String, isLiked: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val repo = NetworkClient.accountRepo
+        if (!repo.isLoggedIn) return@withContext false
+
+        try {
+            val endpoint = if (isLiked) "like/like" else "like/removelike"
+            val payload = createBaseContext()
+            val target = JsonObject()
+            target.addProperty("videoId", videoId)
+            payload.add("target", target)
+
+            val requestBuilder = Request.Builder()
+                .url("$BASE_URL/$endpoint")
+                .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
+
+            if (repo.accessToken != null) {
+                requestBuilder.header("X-Use-OAuth", "true")
+            }
+
+            val response = NetworkClient.okHttpClient.newCall(requestBuilder.build()).execute()
+            val isSuccess = response.isSuccessful
+            response.close()
+            isSuccess
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

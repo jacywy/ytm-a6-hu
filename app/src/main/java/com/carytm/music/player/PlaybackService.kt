@@ -310,6 +310,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        PlaybackStateManager.saveProgress(this, MusicPlayer.getCurrentPosition())
         MusicPlayer.removeListener(this)
         audioFocusManager.abandonAudioFocus()
         mediaSession.release()

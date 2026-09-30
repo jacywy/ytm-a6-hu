@@ -92,7 +92,11 @@ object AppUpdateManager {
                     val json = JsonParser.parseString(body).asJsonObject
                     val rawTag = json.get("tag_name")?.asString ?: ""
                     val remoteVersion = rawTag.removePrefix("v").trim()
-                    val changelog = json.get("body")?.asString?.trim() ?: ""
+                    val rawChangelog = json.get("body")?.asString?.trim() ?: ""
+                    var changelog = cleanChangelog(rawChangelog)
+                    if (changelog.isBlank()) {
+                        changelog = fetchCommitChangelog()
+                    }
 
                     var apkUrl: String? = null
                     val assets = json.getAsJsonArray("assets")
@@ -251,6 +255,63 @@ object AppUpdateManager {
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, context.getString(R.string.update_install_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun cleanChangelog(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        val lines = raw.lines()
+        val cleanedLines = mutableListOf<String>()
+        for (line in lines) {
+            val trimmed = line.trim()
+            if (trimmed.isBlank()) continue
+            if (trimmed.contains("Full Changelog", ignoreCase = true) ||
+                trimmed.contains("/compare/v", ignoreCase = true) ||
+                trimmed.startsWith("## What's Changed", ignoreCase = true) ||
+                trimmed.startsWith("https://github.com", ignoreCase = true)
+            ) {
+                continue
+            }
+            cleanedLines.add(line.trimEnd())
+        }
+        return cleanedLines.joinToString("\n").trim()
+    }
+
+    private fun fetchCommitChangelog(): String {
+        return try {
+            val url = "https://api.github.com/repos/jacywy/ytm-a6-hu/commits?per_page=5"
+            val req = Request.Builder()
+                .url(url)
+                .header("User-Agent", "CarYTM-App")
+                .get()
+                .build()
+            val resp = updateOkHttpClient.newCall(req).execute()
+            val body = resp.body?.string() ?: return ""
+            if (!resp.isSuccessful) return ""
+            val commitsArray = JsonParser.parseString(body).asJsonArray ?: return ""
+            val list = mutableListOf<String>()
+            for (i in 0 until commitsArray.size()) {
+                val commitObj = commitsArray[i].asJsonObject.getAsJsonObject("commit") ?: continue
+                val msg = commitObj.get("message")?.asString?.trim() ?: continue
+                val lines = msg.lines().map { it.trim() }.filter { it.isNotBlank() }
+                for (line in lines) {
+                    if (line.contains("merge", ignoreCase = true) || line.startsWith("Release v", ignoreCase = true)) {
+                        continue
+                    }
+                    val formatted = if (line.startsWith("*") || line.startsWith("-") || line.startsWith("•")) {
+                        line
+                    } else {
+                        "• $line"
+                    }
+                    if (!list.contains(formatted)) {
+                        list.add(formatted)
+                    }
+                }
+            }
+            list.take(6).joinToString("\n")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
         }
     }
 

@@ -14,6 +14,7 @@ import com.carytm.music.R
 import com.carytm.music.model.SongItem
 import com.carytm.music.player.MusicPlayer
 import com.carytm.music.util.LocaleHelper
+import kotlinx.coroutines.*
 
 class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
@@ -76,6 +77,28 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
             updateShuffleUI(enabled)
             val msg = if (enabled) getString(R.string.shuffle_enabled_toast) else getString(R.string.shuffle_disabled_toast)
             android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
+        }
+
+        btnLike.setOnClickListener {
+            val song = MusicPlayer.getCurrentSong() ?: return@setOnClickListener
+            val isCurrentlyLiked = com.carytm.music.player.LikedRepository.isLiked(this, song.videoId)
+            val newLikedState = !isCurrentlyLiked
+            com.carytm.music.player.LikedRepository.setLiked(this, song, newLikedState)
+            updateLikeUI(newLikedState)
+
+            val toastMsg = if (newLikedState) {
+                getString(R.string.toast_added_to_liked)
+            } else {
+                getString(R.string.toast_removed_from_liked)
+            }
+            android.widget.Toast.makeText(this, toastMsg, android.widget.Toast.LENGTH_SHORT).show()
+
+            val repo = com.carytm.music.auth.AccountRepository(this)
+            if (repo.isLoggedIn) {
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    com.carytm.music.net.InnertubeApi.setSongLiked(song.videoId, newLikedState)
+                }
+            }
         }
 
         btnPlayPause.setOnClickListener {
@@ -143,6 +166,8 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
         btnPlayPause.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
         updateShuffleUI(MusicPlayer.isShuffle)
+        val isLiked = song != null && com.carytm.music.player.LikedRepository.isLiked(this, song.videoId)
+        updateLikeUI(isLiked)
 
         // Immediately synchronize buffering and playback state
         val isBuffering = MusicPlayer.isBuffering()
@@ -177,6 +202,15 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
             androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary)
         }
         btnShuffle.setColorFilter(color)
+    }
+
+    private fun updateLikeUI(isLiked: Boolean) {
+        val color = if (isLiked) {
+            androidx.core.content.ContextCompat.getColor(this, R.color.primary)
+        } else {
+            androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary)
+        }
+        btnLike.setColorFilter(color)
     }
 
     private fun formatTime(ms: Long): String {

@@ -81,9 +81,9 @@
     <string name="settings_account_section">账号与同步</string>
     <string name="settings_account_logged_in_format">已登录：%s</string>
     <string name="settings_account_cookie_imported">Cookie 导入账号</string>
-    <string name="settings_account_tv_auth">Google TV 授权账号</string>
-    <string name="settings_login_btn">手机扫码 / TV 登录</string>
-    <string name="settings_cookie_btn">局域网 Cookie 导入</string>
+    <string name="settings_account_tv_auth">Google 账号</string>
+    <string name="settings_login_btn">扫码登录</string>
+    <string name="settings_cookie_btn">Cookie 导入</string>
     <string name="settings_logout">退出登录</string>
     <string name="settings_logout_toast">已退出当前账号</string>
 
@@ -137,10 +137,14 @@
     <string name="cookie_saved_toast">Cookie 导入成功并已保存！</string>
 
     <!-- Account Token Refresh -->
-    <string name="settings_account_auto_refresh_active">自动续期已激活</string>
+    <string name="settings_account_auto_refresh_active">自动续期</string>
     <string name="settings_btn_refresh_token">刷新凭证</string>
     <string name="settings_token_refreshed_toast">账号凭证已刷新并保持有效！</string>
     <string name="settings_token_refresh_failed_toast">账号凭证刷新失败，请检查网络或重新扫码</string>
+
+    <!-- Liked Songs Toasts -->
+    <string name="toast_added_to_liked">已添加到我喜欢的音乐</string>
+    <string name="toast_removed_from_liked">已从我喜欢的音乐中移除</string>
 
     <!-- General Dialog Buttons -->
     <string name="btn_cancel">取消</string>

@@ -55,6 +55,9 @@ class AccountRepository(context: Context) {
      */
     fun isTokenExpired(bufferMs: Long = 300_000L): Boolean {
         if (accessToken.isNullOrBlank()) return true
+        // If we have a refresh token and tokenExpiry is missing or zero (e.g. upgrade from v0.2.8),
+        // treat as expired so it gets refreshed automatically!
+        if (hasRefreshToken && tokenExpiry <= 0L) return true
         if (tokenExpiry <= 0L) return false
         return System.currentTimeMillis() >= (tokenExpiry - bufferMs)
     }

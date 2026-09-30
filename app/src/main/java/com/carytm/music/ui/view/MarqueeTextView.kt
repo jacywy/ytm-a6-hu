@@ -1,28 +1,28 @@
 package com.carytm.music.ui.view
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.view.View
-import android.view.animation.LinearInterpolator
 import androidx.appcompat.widget.AppCompatTextView
 
 /**
  * A dedicated, robust Marquee TextView designed specifically for Car Head Units (Android 6.0+).
  * 
- * Traditional Android TextView marquee has severe limitations on Car Head Unit ROMs:
- * 1. Clamps or clips line width on low-resolution / narrow screens.
- * 2. Resets prematurely before the end of the text is fully shown.
- * 3. Fragile to layout changes, progress updates, and focus shifts.
+ * Why ValueAnimator and AOSP TextView Marquee fail on car head units:
+ * 1. Car head unit ROMs often set `Settings.Global.ANIMATOR_DURATION_SCALE = 0`, causing all
+ *    ValueAnimators to finish instantly (0ms) and snap from start to end without animating!
+ * 2. Native AOSP Marquee depends on view focus and window focus, which break constantly when
+ *    user interacts with other views, playback progress updates, or navigation tabs.
  * 
- * This implementation uses a self-managed smooth scroll controller:
- * - 1.5s initial stationary pause so driver can read the beginning of the title.
- * - Smooth scroll across the full width until the tail character is fully visible (+ extra clearance).
- * - 1.5s stationary pause at the end so driver can read the subtitle / feat / version.
- * - Smooth repeat loop.
- * - Completely immune to ROM-specific TextView.Marquee glitches and focus changes.
+ * This implementation uses an autonomous, timer-driven tick engine with Handler.postDelayed:
+ * - 100% immune to system animator scale settings.
+ * - 1.2s stationary pause at the beginning so driver can read the song title start.
+ * - Smooth 1px/25ms (~40px/s) scroll until all trailing characters and extra clearance are fully displayed.
+ * - 1.2s stationary pause at the end so driver can read feat/version/album info.
+ * - Clean repeat loop.
+ * - Completely lifecycle-aware (pauses on hide/detach, resumes on show).
  */
 class MarqueeTextView @JvmOverloads constructor(
     context: Context,
@@ -30,16 +30,65 @@ class MarqueeTextView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : AppCompatTextView(context, attrs, defStyleAttr) {
 
-    private var scrollAnimator: ValueAnimator? = null
-    private val extraEndPaddingPx: Int = (resources.displayMetrics.density * 36).toInt() // 36dp extra clearance
+    private val marqueeHandler = Handler(Looper.getMainLooper())
+    private val extraEndPaddingPx: Int = (resources.displayMetrics.density * 36).toInt() // 36dp clearance
 
-    private val marqueeStarter = Runnable {
+    private var currentScroll = 0
+    private var maxScroll = 0
+    private var isMarqueeRunning = false
+
+    private enum class MarqueeState {
+        IDLE,
+        START_PAUSE,
+        SCROLLING,
+        END_PAUSE
+    }
+
+    private var currentState = MarqueeState.IDLE
+
+    private val tickRunnable = object : Runnable {
+        override fun run() {
+            if (!isAttachedToWindow || visibility != View.VISIBLE || !isMarqueeRunning) {
+                return
+            }
+
+            when (currentState) {
+                MarqueeState.START_PAUSE -> {
+                    currentState = MarqueeState.SCROLLING
+                    marqueeHandler.postDelayed(this, 25L)
+                }
+                MarqueeState.SCROLLING -> {
+                    currentScroll += 1
+                    if (currentScroll >= maxScroll) {
+                        currentScroll = maxScroll
+                        scrollTo(currentScroll, 0)
+                        currentState = MarqueeState.END_PAUSE
+                        marqueeHandler.postDelayed(this, 1200L) // 1.2s end pause
+                    } else {
+                        scrollTo(currentScroll, 0)
+                        marqueeHandler.postDelayed(this, 25L)
+                    }
+                }
+                MarqueeState.END_PAUSE -> {
+                    currentScroll = 0
+                    scrollTo(0, 0)
+                    currentState = MarqueeState.START_PAUSE
+                    marqueeHandler.postDelayed(this, 1200L) // 1.2s start pause
+                }
+                MarqueeState.IDLE -> {
+                    // Do nothing
+                }
+            }
+        }
+    }
+
+    private val starterRunnable = Runnable {
         startMarqueeIfNeeded()
     }
 
     init {
         isSingleLine = true
-        ellipsize = null // Disable native buggy AOSP marquee
+        ellipsize = null // Disable native AOSP marquee
         setHorizontallyScrolling(true)
     }
 
@@ -57,10 +106,11 @@ class MarqueeTextView @JvmOverloads constructor(
     }
 
     private fun postRestartMarquee() {
-        removeCallbacks(marqueeStarter)
         stopMarquee()
+        currentScroll = 0
         scrollTo(0, 0)
-        post(marqueeStarter)
+        marqueeHandler.removeCallbacks(starterRunnable)
+        marqueeHandler.post(starterRunnable)
     }
 
     private fun startMarqueeIfNeeded() {
@@ -73,49 +123,26 @@ class MarqueeTextView @JvmOverloads constructor(
         if (availableWidth <= 0) return
 
         if (textWidth <= availableWidth) {
-            // Text fits comfortably on screen, no scrolling needed
+            // Text fits comfortably without scrolling
+            currentScroll = 0
             scrollTo(0, 0)
+            currentState = MarqueeState.IDLE
             return
         }
 
-        // Scroll distance guarantees every last character completely scrolls into view with extra clearance
-        val totalScrollDist = (textWidth - availableWidth + extraEndPaddingPx).toInt()
-        val scrollSpeedDpPerSec = 35f
-        val density = resources.displayMetrics.density
-        val scrollDurationMs = ((totalScrollDist / (scrollSpeedDpPerSec * density)) * 1000L).toLong().coerceAtLeast(1500L)
-
-        val animator = ValueAnimator.ofInt(0, totalScrollDist).apply {
-            duration = scrollDurationMs
-            startDelay = 1500L // 1.5s initial pause so driver can read title start
-            interpolator = LinearInterpolator()
-            addUpdateListener { va ->
-                val curr = va.animatedValue as Int
-                scrollTo(curr, 0)
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    if (isAttachedToWindow && visibility == View.VISIBLE) {
-                        // Pause at the end for 1.5s, then restart from beginning
-                        postDelayed({
-                            if (isAttachedToWindow && visibility == View.VISIBLE) {
-                                scrollTo(0, 0)
-                                startMarqueeIfNeeded()
-                            }
-                        }, 1500L)
-                    }
-                }
-            })
-        }
-
-        scrollAnimator = animator
-        animator.start()
+        maxScroll = (textWidth - availableWidth + extraEndPaddingPx).toInt()
+        currentScroll = 0
+        scrollTo(0, 0)
+        isMarqueeRunning = true
+        currentState = MarqueeState.START_PAUSE
+        marqueeHandler.postDelayed(tickRunnable, 1200L) // 1.2s initial stationary pause
     }
 
     fun stopMarquee() {
-        scrollAnimator?.removeAllListeners()
-        scrollAnimator?.removeAllUpdateListeners()
-        scrollAnimator?.cancel()
-        scrollAnimator = null
+        isMarqueeRunning = false
+        currentState = MarqueeState.IDLE
+        marqueeHandler.removeCallbacks(tickRunnable)
+        marqueeHandler.removeCallbacks(starterRunnable)
     }
 
     override fun onAttachedToWindow() {
@@ -125,8 +152,18 @@ class MarqueeTextView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        removeCallbacks(marqueeStarter)
         stopMarquee()
+        currentScroll = 0
+        scrollTo(0, 0)
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (visibility == View.VISIBLE) {
+            postRestartMarquee()
+        } else {
+            stopMarquee()
+        }
     }
 
     override fun onWindowVisibilityChanged(visibility: Int) {
@@ -134,7 +171,6 @@ class MarqueeTextView @JvmOverloads constructor(
         if (visibility == View.VISIBLE) {
             postRestartMarquee()
         } else {
-            removeCallbacks(marqueeStarter)
             stopMarquee()
         }
     }
