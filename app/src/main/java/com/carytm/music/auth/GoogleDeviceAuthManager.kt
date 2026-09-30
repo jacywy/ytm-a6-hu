@@ -167,7 +167,7 @@ class GoogleDeviceAuthManager(private val context: Context) {
                 .post(jsonBody)
                 .build()
 
-            val response = NetworkClient.okHttpClient.newCall(request).execute()
+            val response = NetworkClient.extractorOkHttpClient.newCall(request).execute()
             val body = response.body?.string() ?: return false
             if (response.isSuccessful) {
                 val tokenResponse = gson.fromJson(body, TokenResponse::class.java)

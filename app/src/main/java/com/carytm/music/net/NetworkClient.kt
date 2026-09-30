@@ -16,7 +16,7 @@ object NetworkClient {
 
     private var initialized = false
     lateinit var accountRepo: AccountRepository
-    lateinit var deviceAuthManager: com.carytm.music.auth.GoogleDeviceAuthManager
+    var deviceAuthManager: com.carytm.music.auth.GoogleDeviceAuthManager? = null
     var appContext: Context? = null
 
     fun init(context: Context) {
@@ -117,8 +117,8 @@ object NetworkClient {
                 requestBuilder.removeHeader("X-Use-OAuth")
 
                 // Auto-refresh token if expired or about to expire in 5 minutes
-                if (::deviceAuthManager.isInitialized && accountRepo.hasRefreshToken && accountRepo.isTokenExpired()) {
-                    deviceAuthManager.refreshAccessTokenSync()
+                if (accountRepo.hasRefreshToken && accountRepo.isTokenExpired()) {
+                    deviceAuthManager?.refreshAccessTokenSync()
                 }
 
                 accountRepo.accessToken?.let { token ->
@@ -138,9 +138,9 @@ object NetworkClient {
             val response = chain.proceed(requestBuilder.build())
 
             // Self-healing: If 401 Unauthorized occurs on OAuth request, force-refresh token and retry once
-            if (response.code == 401 && isOAuthRequested && ::deviceAuthManager.isInitialized && accountRepo.hasRefreshToken) {
+            if (response.code == 401 && isOAuthRequested && accountRepo.hasRefreshToken) {
                 response.close()
-                val refreshed = deviceAuthManager.refreshAccessTokenSync(force = true)
+                val refreshed = deviceAuthManager?.refreshAccessTokenSync(force = true) == true
                 if (refreshed) {
                     val retryBuilder = original.newBuilder()
                     retryBuilder.removeHeader("X-Use-OAuth")
