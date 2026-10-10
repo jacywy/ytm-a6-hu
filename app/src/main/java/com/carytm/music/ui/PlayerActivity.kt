@@ -240,12 +240,18 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     override fun onProgressUpdate(currentMs: Long, totalMs: Long) {
         if (!isUserTrackingSeekBar) {
+            val progress = if (totalMs > 0) ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt() else 0
+            val curTimeStr = formatTime(currentMs)
+            val totTimeStr = if (totalMs > 0) formatTime(totalMs) else "00:00"
             runOnUiThread {
-                if (totalMs > 0) {
-                    val progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
+                if (seekbar.progress != progress) {
                     seekbar.progress = progress
-                    tvCurrentTime.text = formatTime(currentMs)
-                    tvTotalTime.text = formatTime(totalMs)
+                }
+                if (tvCurrentTime.text != curTimeStr) {
+                    tvCurrentTime.text = curTimeStr
+                }
+                if (tvTotalTime.text != totTimeStr) {
+                    tvTotalTime.text = totTimeStr
                 }
             }
         }

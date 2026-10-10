@@ -150,16 +150,16 @@
             android:progressTint="@color/primary"
             android:thumbTint="@color/primary_light" />
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content">
 
             <TextView
                 android:id="@+id/player_time_current"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_alignParentStart="true"
+                android:minWidth="44dp"
                 android:text="00:00"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
@@ -168,12 +168,13 @@
                 android:id="@+id/player_time_total"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
                 android:minWidth="44dp"
                 android:gravity="end"
                 android:text="00:00"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
-        </LinearLayout>
+        </RelativeLayout>
 
         <!-- Big Playback Controls (Responsive Flex) -->
         <LinearLayout

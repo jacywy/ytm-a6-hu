@@ -202,14 +202,14 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     override fun onBuffering(isBuffering: Boolean) {}
 
     override fun onProgressUpdate(currentMs: Long, totalMs: Long) {
+        val timeStr = if (totalMs > 0) formatProgress(currentMs, totalMs) else ""
+        val progress = if (totalMs > 0) ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt() else 0
         runOnUiThread {
-            if (totalMs > 0) {
-                miniPlayerTime.text = formatProgress(currentMs, totalMs)
-                val progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
+            if (miniPlayerTime.text != timeStr) {
+                miniPlayerTime.text = timeStr
+            }
+            if (miniPlayerProgress.progress != progress) {
                 miniPlayerProgress.progress = progress
-            } else {
-                miniPlayerTime.text = ""
-                miniPlayerProgress.progress = 0
             }
         }
     }

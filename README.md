@@ -279,6 +279,13 @@ CarYTM/
 
 ## 📝 更新日志 (Changelog)
 
+### v0.3.3 (2026-10-10)
+* **车机跑马灯全平滑重构（彻底根治跳跃与截断）**：
+  * 弃用引起视图裁剪冲突的 `scrollTo(x, y)`，改用底层直接 `Canvas` 硬件加速平移绘制，视图坐标与 `mScrollX` 恒为 0，彻底根除进度条每秒刷新触发父级 Layout 导致的“往前跳一下又恢复”抖动问题；
+  * 基于时间增量（Delta Time，35dp/s）实现 60 FPS 丝滑匀速滚动，不受系统动画缩放比例（`ANIMATOR_DURATION_SCALE=0`）与掉帧影响；
+  * 滚动距离自动增加 40dp 充足安全余量，彻底消除原生 AOSP 跑马灯未展示完全即提前复位的截断问题；
+  * 起始与末尾分别提供 1.5 秒自然驻留，便于驾驶员完整阅读歌曲开头与副标题/版本信息。
+
 ### v0.3.2 (2026-10-10)
 * **二次启动崩溃紧急修复 (Hotfix)**：修复应用在恢复播放列表和进度（记忆续播）后第二次启动时，`PlaybackService` 在 `mediaSession` 与 `audioFocusManager` 初始化完成前过早注册播放监听器导致的 `lateinit property mediaSession has not been initialized` 闪退问题，补充全生命周期防御性保护。
 
