@@ -50,7 +50,6 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     override fun onCreate() {
         super.onCreate()
         MusicPlayer.init(this)
-        MusicPlayer.addListener(this)
 
         // Initialize Car AudioFocus Manager with Ducking
         audioFocusManager = CarAudioFocusManager(
@@ -69,7 +68,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
             )
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
-                    if (audioFocusManager.requestAudioFocus()) {
+                    if (::audioFocusManager.isInitialized && audioFocusManager.requestAudioFocus()) {
                         MusicPlayer.play()
                     }
                 }
@@ -94,7 +93,10 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         }
 
         createNotificationChannel()
-        val initialNotification = buildNotification("CarYTM", getString(R.string.now_playing))
+        val currentSong = MusicPlayer.getCurrentSong()
+        val initialTitle = currentSong?.title ?: "CarYTM"
+        val initialArtist = currentSong?.artist ?: getString(R.string.now_playing)
+        val initialNotification = buildNotification(initialTitle, initialArtist)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
@@ -104,10 +106,15 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         } else {
             startForeground(NOTIFICATION_ID, initialNotification)
         }
+
+        // Register listener only AFTER mediaSession, audioFocusManager and notification are ready
+        MusicPlayer.addListener(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        androidx.media.session.MediaButtonReceiver.handleIntent(mediaSession, intent)
+        if (::mediaSession.isInitialized) {
+            androidx.media.session.MediaButtonReceiver.handleIntent(mediaSession, intent)
+        }
         return START_STICKY
     }
 
@@ -123,6 +130,7 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     }
 
     private fun updateMetadataAndNotification(song: SongItem?) {
+        if (!::mediaSession.isInitialized) return
         val title = song?.title ?: "CarYTM"
         val artist = song?.artist ?: getString(R.string.now_playing)
         val album = song?.albumName?.takeIf { it.isNotBlank() } ?: "YouTube Music"
@@ -148,9 +156,11 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
                 .into(object : CustomTarget<Bitmap>(256, 256) {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         currentAlbumArt = resource
-                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
-                        metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
-                        mediaSession.setMetadata(metadataBuilder.build())
+                        if (::mediaSession.isInitialized) {
+                            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, resource)
+                            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, resource)
+                            mediaSession.setMetadata(metadataBuilder.build())
+                        }
                         nm.notify(NOTIFICATION_ID, buildNotification(title, artist, resource))
                     }
                     override fun onLoadCleared(placeholder: Drawable?) {}
@@ -163,9 +173,9 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     override fun onPlayStateChanged(isPlaying: Boolean) {
         updatePlaybackState()
         if (isPlaying) {
-            audioFocusManager.requestAudioFocus()
+            if (::audioFocusManager.isInitialized) audioFocusManager.requestAudioFocus()
         } else {
-            audioFocusManager.onUserPaused()
+            if (::audioFocusManager.isInitialized) audioFocusManager.onUserPaused()
         }
         val song = MusicPlayer.getCurrentSong()
         val title = song?.title ?: "CarYTM"
@@ -222,11 +232,13 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
     }
 
     private fun updatePlaybackState() {
+        if (!::mediaSession.isInitialized) return
         val isPlaying = MusicPlayer.isPlaying()
-        val state = if (isPlaying) {
-            PlaybackStateCompat.STATE_PLAYING
-        } else {
-            PlaybackStateCompat.STATE_PAUSED
+        val isBuffering = MusicPlayer.isBuffering()
+        val state = when {
+            isBuffering -> PlaybackStateCompat.STATE_BUFFERING
+            isPlaying -> PlaybackStateCompat.STATE_PLAYING
+            else -> PlaybackStateCompat.STATE_PAUSED
         }
 
         val playbackState = PlaybackStateCompat.Builder()
@@ -295,11 +307,14 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
                 playPausePendingIntent
             )
             .addAction(R.drawable.ic_next, getString(R.string.notification_action_next), nextPendingIntent)
-            .setStyle(
+
+        if (::mediaSession.isInitialized) {
+            builder.setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
                     .setShowActionsInCompactView(0, 1, 2)
             )
+        }
 
         if (albumArt != null) {
             builder.setLargeIcon(albumArt)
@@ -312,7 +327,11 @@ class PlaybackService : Service(), MusicPlayer.PlaybackListener {
         super.onDestroy()
         PlaybackStateManager.saveProgress(this, MusicPlayer.getCurrentPosition())
         MusicPlayer.removeListener(this)
-        audioFocusManager.abandonAudioFocus()
-        mediaSession.release()
+        if (::audioFocusManager.isInitialized) {
+            audioFocusManager.abandonAudioFocus()
+        }
+        if (::mediaSession.isInitialized) {
+            mediaSession.release()
+        }
     }
 }

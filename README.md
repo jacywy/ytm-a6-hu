@@ -279,6 +279,9 @@ CarYTM/
 
 ## 📝 更新日志 (Changelog)
 
+### v0.3.2 (2026-10-10)
+* **二次启动崩溃紧急修复 (Hotfix)**：修复应用在恢复播放列表和进度（记忆续播）后第二次启动时，`PlaybackService` 在 `mediaSession` 与 `audioFocusManager` 初始化完成前过早注册播放监听器导致的 `lateinit property mediaSession has not been initialized` 闪退问题，补充全生命周期防御性保护。
+
 ### v0.3.1 (2026-09-30)
 * **启动崩溃紧急修复 (Hotfix)**：修复 `MarqueeTextView` 在 XML 布局加载构造期间因父类 `TextView` 预先调用 `setText()` 触发的 `NullPointerException` 空指针崩溃，全面增加构造期安全保护。
 
