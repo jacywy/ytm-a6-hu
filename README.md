@@ -77,13 +77,20 @@ CarYTM solves all these challenges with zero WebView dependencies, modern Boring
 ### 9. Bilingual Localization (English & Simplified Chinese)
 * **Automatic & Manual Switching**: Automatically adapts to vehicle system language, with an in-app language switcher under Settings (`Follow System`, `简体中文`, `English`).
 
+### 10. Instant Cold Start & Automotive Visual Feedback
+* **Zero-Delay Splash Screen**: Implements a dedicated window background theme (`Theme.CarYTM.Splash`) with a centered logo bitmap, eliminating black screen latency during cold boot on slow automotive flash storage.
+* **Asynchronous Cache Initialization**: Heavy disk scanning and SQLite cache initialization are offloaded to background coroutines, keeping the main UI thread immediately responsive.
+* **Fault-Tolerant Loading States**: Home, Library, and Search screens provide high-contrast loading spinners with explicit network failure prompts and one-touch retry buttons.
+* **Real-time Mini Player Buffering**: Overlays a rotating spinner over the mini player album art and displays audio resolution status when loading network streams without local cache.
+* **Instant Zero Progress on Song Change**: Progress bar and timer immediately reset to 0 (00:00) the instant a song changes.
+
 ---
 
 ## 📱 Installation & Downloads
 
 ### Download Pre-built APKs
 Download the latest APK release from the [GitHub Releases](https://github.com/jacywy/ytm-a6-hu/releases) page:
-- **Latest Release**: [v0.3.1 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.1/app-debug.apk)
+- **Latest Release**: [v0.3.4 - App Debug APK](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.4/app-debug.apk)
 
 ### Install via ADB (USB or Wi-Fi)
 ```bash
@@ -204,13 +211,20 @@ This project is licensed under the [GPL-3.0 License](LICENSE).
 ### 9. 完整中英双语支持（中文 / 英文）
 * **跟随系统与应用内切换**：自动适配车载系统默认语言，并支持在设置中心独立切换（跟随系统 / 简体中文 / English）。
 
+### 10. 极速冷启动过渡与全链路视觉状态反馈
+* **秒开无黑屏 Splash 机制**：采用系统级 `Theme.CarYTM.Splash` 窗口背景与高精度位图 Logo，彻底消除低配车机在读取较慢存储时的黑屏等待感。
+* **磁盘缓存异步初始化**：将庞大的 `SimpleCache` 磁盘索引与 SQLite 扫描移至后台协程异步完成，主线程完全脱困，冷启动零卡顿。
+* **弱网容错与加载指示器**：首页、歌单与搜索界面全面采用高兼容性旋转指示器，弱网或超时状态下提供友好的失败说明及一键重试按钮。
+* **迷你播放器缓冲状态同步**：未缓存歌曲解析或缓冲时，底部迷你播放器专辑封面呈现半透明遮罩与旋转指示器，并同步提示“正在解析并缓冲音频...”，状态一目了然。
+* **切歌进度即时秒归零**：歌曲切换瞬间进度条与时间计数立即归零（00:00），避免展示上一首歌曲残留进度的视觉突兀。
+
 ---
 
 ## 📦 安装与下载
 
 ### 预编译 APK 下载
 进入本仓库的 [Releases](https://github.com/jacywy/ytm-a6-hu/releases) 页面下载最新构建：
-- **最新正式版本**：[v0.2.8 - app-debug.apk](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.2.8/app-debug.apk)
+- **最新正式版本**：[v0.3.4 - app-debug.apk](https://github.com/jacywy/ytm-a6-hu/releases/download/v0.3.4/app-debug.apk)
 
 ### 命令行安装
 ```bash

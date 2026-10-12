@@ -17,4 +17,8 @@
         <item name="android:windowBackground">@color/surface</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
     </style>
+    <!-- Splash Screen Theme: displays centered logo during cold start -->
+    <style name="Theme.CarYTM.Splash" parent="Theme.CarYTM">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
 </resources>

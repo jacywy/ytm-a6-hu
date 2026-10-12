@@ -11,6 +11,11 @@
     <string name="search_hint">搜索歌曲、歌手或专辑...</string>
     <string name="search_empty">暂无搜索结果</string>
     <string name="search_button">搜索</string>
+    <string name="search_loading_hint">正在搜索...</string>
+    <string name="loading_recommendations">正在加载推荐...</string>
+    <string name="loading_playlists">正在加载歌单...</string>
+    <string name="load_failed_hint">加载失败，请检查网络（可下拉重试）</string>
+    <string name="btn_retry">重试</string>
 
     <!-- Home -->
     <string name="home_recommended">今日推荐</string>
@@ -79,8 +84,8 @@
     <!-- Settings: Account -->
     <string name="settings_title">车载设置</string>
     <string name="settings_account_section">账号与同步</string>
-    <string name="settings_account_logged_in_format">已登录：%s</string>
-    <string name="settings_account_cookie_imported">Cookie 导入账号</string>
+    <string name="settings_account_logged_in_format">已登录 (%s)</string>
+    <string name="settings_account_cookie_imported">Cookie 导入</string>
     <string name="settings_account_tv_auth">Google 账号</string>
     <string name="settings_login_btn">扫码登录</string>
     <string name="settings_cookie_btn">Cookie 导入</string>
@@ -113,7 +118,7 @@
 
     <!-- Settings: Maintenance & Protocol -->
     <string name="settings_maintenance_section">协议热维护说明</string>
-    <string name="settings_version_info">CarYTM v0.2.9 (API 23 车机专用版)</string>
+    <string name="settings_version_info">CarYTM v%s (API 23 车机专用版)</string>
     <string name="settings_protocol_desc">本 App 解耦了 NewPipeExtractor 协议引擎。当 YouTube 官方更新反爬导致播放报错时，只需在 GitHub 仓库修改版本号 Commit，Actions 会在 3 分钟内自动编译产出修复版 APK。</string>
     <string name="settings_check_update">检查新版本</string>
     <string name="settings_checking_update">正在检查更新...</string>

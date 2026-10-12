@@ -39,6 +39,10 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
     private lateinit var btnLoginTrigger: Button
     private lateinit var rvPlaylists: RecyclerView
     private lateinit var playlistAdapter: PlaylistAdapter
+    private lateinit var layoutLibraryStatus: View
+    private lateinit var pbLibraryLoading: ProgressBar
+    private lateinit var tvLibraryStatus: TextView
+    private lateinit var btnLibraryRetry: Button
 
     // Playlist Detail Views
     private lateinit var layoutPlaylistDetail: View
@@ -68,6 +72,15 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
         tvAccountStatus = view.findViewById(R.id.tv_account_status)
         btnLoginTrigger = view.findViewById(R.id.btn_login_trigger)
         rvPlaylists = view.findViewById(R.id.rv_library_playlists)
+        layoutLibraryStatus = view.findViewById(R.id.layout_library_status)
+        pbLibraryLoading = view.findViewById(R.id.pb_library_loading)
+        tvLibraryStatus = view.findViewById(R.id.tv_library_status)
+        btnLibraryRetry = view.findViewById(R.id.btn_library_retry)
+
+        btnLibraryRetry.setOnClickListener {
+            refreshData(isSwipe = false)
+        }
+
         swipeRefresh = view.findViewById(R.id.swipe_refresh_library)
         swipeRefresh?.setColorSchemeResources(R.color.primary)
         swipeRefresh?.setOnRefreshListener {
@@ -285,6 +298,7 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             loadUserPlaylists(isSwipe)
         } else {
             swipeRefresh?.isRefreshing = false
+            layoutLibraryStatus.visibility = View.GONE
             bannerLoginPrompt.visibility = View.VISIBLE
             tvAccountStatus.text = getString(R.string.not_logged_in)
             playlistList.clear()
@@ -293,6 +307,12 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
     }
 
     private fun loadUserPlaylists(isSwipe: Boolean = false) {
+        if (!isSwipe && playlistList.isEmpty()) {
+            layoutLibraryStatus.visibility = View.VISIBLE
+            pbLibraryLoading.visibility = View.VISIBLE
+            tvLibraryStatus.text = getString(R.string.loading_playlists)
+            btnLibraryRetry.visibility = View.GONE
+        }
         scope.launch {
             if (isSwipe) {
                 val repo = AccountRepository(requireContext())
@@ -302,9 +322,17 @@ class LibraryFragment : Fragment(), MusicPlayer.PlaybackListener {
             }
             val list = InnertubeApi.getUserPlaylists(requireContext())
             swipeRefresh?.isRefreshing = false
-            playlistList.clear()
-            playlistList.addAll(list)
-            playlistAdapter.submitList(playlistList)
+            if (list.isNotEmpty()) {
+                layoutLibraryStatus.visibility = View.GONE
+                playlistList.clear()
+                playlistList.addAll(list)
+                playlistAdapter.submitList(playlistList)
+            } else if (playlistList.isEmpty()) {
+                layoutLibraryStatus.visibility = View.VISIBLE
+                pbLibraryLoading.visibility = View.GONE
+                tvLibraryStatus.text = getString(R.string.load_failed_hint)
+                btnLibraryRetry.visibility = View.VISIBLE
+            }
         }
     }
 }

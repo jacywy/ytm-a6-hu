@@ -12,6 +12,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -31,7 +32,10 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
     private lateinit var etSearchInput: EditText
     private lateinit var btnSearchClear: View
     private lateinit var btnSearchSubmit: Button
+    private lateinit var layoutSearchStatus: View
     private lateinit var searchLoading: ProgressBar
+    private lateinit var tvSearchStatus: TextView
+    private lateinit var btnSearchRetry: Button
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var rvSearchResults: RecyclerView
     private lateinit var songAdapter: SongAdapter
@@ -44,9 +48,16 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
         etSearchInput = view.findViewById(R.id.et_search_input)
         btnSearchClear = view.findViewById(R.id.btn_search_clear)
         btnSearchSubmit = view.findViewById(R.id.btn_search_submit)
+        layoutSearchStatus = view.findViewById(R.id.layout_search_status)
         searchLoading = view.findViewById(R.id.search_loading)
+        tvSearchStatus = view.findViewById(R.id.tv_search_status)
+        btnSearchRetry = view.findViewById(R.id.btn_search_retry)
         swipeRefresh = view.findViewById(R.id.swipe_refresh_search)
         rvSearchResults = view.findViewById(R.id.rv_search_results)
+
+        btnSearchRetry.setOnClickListener {
+            performSearch(isSwipe = false)
+        }
 
         swipeRefresh.setColorSchemeResources(R.color.primary)
         swipeRefresh.setOnRefreshListener {
@@ -68,6 +79,9 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
 
         btnSearchClear.setOnClickListener {
             etSearchInput.text?.clear()
+            layoutSearchStatus.visibility = View.GONE
+            searchResults.clear()
+            songAdapter.submitList(searchResults)
             etSearchInput.requestFocus()
             val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
             imm?.showSoftInput(etSearchInput, InputMethodManager.SHOW_IMPLICIT)
@@ -109,19 +123,36 @@ class SearchFragment : Fragment(), MusicPlayer.PlaybackListener {
         imm?.hideSoftInputFromWindow(etSearchInput.windowToken, 0)
 
         if (!isSwipe) {
+            layoutSearchStatus.visibility = View.VISIBLE
             searchLoading.visibility = View.VISIBLE
+            tvSearchStatus.text = getString(R.string.search_loading_hint)
+            btnSearchRetry.visibility = View.GONE
         }
         scope.launch {
-            val list = InnertubeApi.search(query)
-            searchLoading.visibility = View.GONE
-            swipeRefresh.isRefreshing = false
-            searchResults.clear()
-            searchResults.addAll(list)
-            songAdapter.submitList(searchResults)
-            scrollToCurrentPlaying()
-
-            if (list.isEmpty()) {
-                Toast.makeText(context, getString(R.string.search_empty), Toast.LENGTH_SHORT).show()
+            try {
+                val list = InnertubeApi.search(query)
+                searchLoading.visibility = View.GONE
+                swipeRefresh.isRefreshing = false
+                searchResults.clear()
+                if (list.isNotEmpty()) {
+                    layoutSearchStatus.visibility = View.GONE
+                    searchResults.addAll(list)
+                    songAdapter.submitList(searchResults)
+                    scrollToCurrentPlaying()
+                } else {
+                    songAdapter.submitList(searchResults)
+                    layoutSearchStatus.visibility = View.VISIBLE
+                    tvSearchStatus.text = getString(R.string.search_empty)
+                    btnSearchRetry.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                searchLoading.visibility = View.GONE
+                swipeRefresh.isRefreshing = false
+                searchResults.clear()
+                songAdapter.submitList(searchResults)
+                layoutSearchStatus.visibility = View.VISIBLE
+                tvSearchStatus.text = getString(R.string.load_failed_hint)
+                btnSearchRetry.visibility = View.VISIBLE
             }
         }
     }

@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     private lateinit var miniPlayerProgress: ProgressBar
     private lateinit var miniPlayerTime: TextView
     private lateinit var miniAlbumArt: ImageView
+    private lateinit var miniBufferDim: View
+    private lateinit var miniBufferProgress: ProgressBar
     private lateinit var miniSongTitle: TextView
     private lateinit var miniArtistName: TextView
     private lateinit var miniBtnPrev: ImageButton
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
     private var activeFragment: Fragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_CarYTM)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -84,6 +87,8 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         miniPlayerProgress = findViewById(R.id.mini_player_progress)
         miniPlayerTime = findViewById(R.id.mini_player_time)
         miniAlbumArt = findViewById(R.id.mini_album_art)
+        miniBufferDim = findViewById(R.id.mini_buffer_dim)
+        miniBufferProgress = findViewById(R.id.mini_buffer_progress)
         miniSongTitle = findViewById(R.id.mini_song_title)
         miniArtistName = findViewById(R.id.mini_artist_name)
         miniBtnPrev = findViewById(R.id.mini_btn_prev)
@@ -180,16 +185,28 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
             miniAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
         }
 
+        val isBuffering = MusicPlayer.isBuffering()
+        updateBufferingUI(isBuffering)
         miniBtnPlayPause.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+    }
+
+    private fun updateBufferingUI(isBuffering: Boolean) {
+        val hasSong = MusicPlayer.getCurrentSong() != null
+        if (hasSong && isBuffering) {
+            miniBufferDim.visibility = View.VISIBLE
+            miniBufferProgress.visibility = View.VISIBLE
+            miniPlayerTime.text = getString(R.string.playing_loading)
+        } else {
+            miniBufferDim.visibility = View.GONE
+            miniBufferProgress.visibility = View.GONE
+        }
     }
 
     override fun onSongChanged(song: SongItem?) {
         runOnUiThread {
+            miniPlayerProgress.progress = 0
+            miniPlayerTime.text = ""
             updateMiniPlayerUI(song, MusicPlayer.isPlaying())
-            if (song == null) {
-                miniPlayerTime.text = ""
-                miniPlayerProgress.progress = 0
-            }
         }
     }
 
@@ -199,9 +216,21 @@ class MainActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         }
     }
 
-    override fun onBuffering(isBuffering: Boolean) {}
+    override fun onBuffering(isBuffering: Boolean) {
+        runOnUiThread {
+            updateBufferingUI(isBuffering)
+            if (!isBuffering) {
+                val dur = MusicPlayer.getDuration()
+                val pos = MusicPlayer.getCurrentPosition()
+                if (dur > 0L) {
+                    miniPlayerTime.text = formatProgress(pos, dur)
+                }
+            }
+        }
+    }
 
     override fun onProgressUpdate(currentMs: Long, totalMs: Long) {
+        if (MusicPlayer.isBuffering()) return
         val timeStr = if (totalMs > 0) formatProgress(currentMs, totalMs) else ""
         val progress = if (totalMs > 0) ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt() else 0
         runOnUiThread {

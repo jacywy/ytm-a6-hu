@@ -6,6 +6,7 @@ import com.carytm.music.model.DeviceCodeResponse
 import com.carytm.music.model.TokenResponse
 import com.carytm.music.net.NetworkClient
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -104,7 +105,7 @@ class GoogleDeviceAuthManager(private val context: Context) {
                             }
                             val expiresInSec = tokenResponse.expiresIn ?: 3600
                             accountRepo.tokenExpiry = System.currentTimeMillis() + expiresInSec * 1000L
-                            accountRepo.accountName = "Google Account"
+                            fetchAndSaveAccountName(tokenResponse.accessToken)
                             withContext(Dispatchers.Main) {
                                 onSuccess(tokenResponse)
                             }
@@ -190,6 +191,34 @@ class GoogleDeviceAuthManager(private val context: Context) {
             Log.e("CarYTM_Auth", "Token refresh exception: ${e.message}")
             false
         }
+    }
+
+    suspend fun fetchAndSaveAccountName(token: String?): String? = withContext(Dispatchers.IO) {
+        if (token.isNullOrBlank()) return@withContext null
+        try {
+            val request = Request.Builder()
+                .url("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true")
+                .header("Authorization", "Bearer $token")
+                .build()
+            val response = NetworkClient.okHttpClient.newCall(request).execute()
+            val body = response.body?.string()
+            if (response.isSuccessful && !body.isNullOrBlank()) {
+                val json = JsonParser.parseString(body).asJsonObject
+                val items = json.getAsJsonArray("items")
+                if (items != null && items.size() > 0) {
+                    val title = items[0].asJsonObject
+                        .getAsJsonObject("snippet")
+                        ?.get("title")?.asString
+                    if (!title.isNullOrBlank()) {
+                        accountRepo.accountName = title
+                        return@withContext title
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("CarYTM_Auth", "Failed to fetch channel name: ${e.message}")
+        }
+        return@withContext null
     }
 
     fun cancelPolling() {

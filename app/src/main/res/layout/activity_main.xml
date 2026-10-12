@@ -190,13 +190,38 @@
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp">
 
-                <!-- Album Art -->
-                <ImageView
-                    android:id="@+id/mini_album_art"
+                <!-- Album Art with Buffering Indicator Overlay -->
+                <FrameLayout
                     android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_music_placeholder" />
+                    android:layout_height="48dp">
+
+                    <ImageView
+                        android:id="@+id/mini_album_art"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_music_placeholder" />
+
+                    <!-- Translucent Dim Overlay when buffering -->
+                    <View
+                        android:id="@+id/mini_buffer_dim"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#88000000"
+                        android:visibility="gone" />
+
+                    <!-- Indeterminate spinning buffer circle -->
+                    <ProgressBar
+                        android:id="@+id/mini_buffer_progress"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:indeterminate="true"
+                        android:indeterminateDrawable="@drawable/spinner_ring"
+                        android:indeterminateTint="@color/primary"
+                        android:indeterminateTintMode="src_in"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <!-- Track Info -->
                 <LinearLayout

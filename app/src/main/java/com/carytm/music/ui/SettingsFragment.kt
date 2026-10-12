@@ -17,6 +17,7 @@ import com.carytm.music.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -55,6 +56,9 @@ class SettingsFragment : Fragment() {
         tvLanguage = view.findViewById(R.id.tv_settings_language)
         btnLanguage = view.findViewById(R.id.btn_settings_language)
         btnCheckUpdate = view.findViewById(R.id.btn_settings_check_update)
+
+        val tvVersion = view.findViewById<TextView>(R.id.tv_settings_version)
+        tvVersion?.text = getString(R.string.settings_version_info, com.carytm.music.BuildConfig.VERSION_NAME)
 
         btnCheckUpdate.setOnClickListener {
             Toast.makeText(context, getString(R.string.settings_checking_update), Toast.LENGTH_SHORT).show()
@@ -139,6 +143,19 @@ class SettingsFragment : Fragment() {
         super.onResume()
         updateCacheUI()
         updateLanguageUI()
+        updateAccountUI()
+        val repo = AccountRepository(requireContext())
+        if (repo.isLoggedIn && (repo.accountName.isNullOrBlank() || repo.accountName == "Google Account") && !repo.accessToken.isNullOrBlank()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val authManager = com.carytm.music.auth.GoogleDeviceAuthManager(requireContext())
+                val name = authManager.fetchAndSaveAccountName(repo.accessToken)
+                if (!name.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        updateAccountUI()
+                    }
+                }
+            }
+        }
     }
 
     private fun showLanguageDialog() {
@@ -190,14 +207,12 @@ class SettingsFragment : Fragment() {
     private fun updateAccountUI() {
         val repo = AccountRepository(requireContext())
         if (repo.isLoggedIn) {
-            val typeStr = if (repo.hasRefreshToken) {
-                getString(R.string.settings_account_tv_auth) + " (" + getString(R.string.settings_account_auto_refresh_active) + ")"
-            } else if (!repo.cookies.isNullOrBlank()) {
-                getString(R.string.settings_account_cookie_imported)
-            } else {
-                repo.accountName ?: getString(R.string.settings_account_tv_auth)
+            val displayName = when {
+                !repo.accountName.isNullOrBlank() && repo.accountName != "Google Account" -> repo.accountName!!
+                !repo.cookies.isNullOrBlank() -> getString(R.string.settings_account_cookie_imported)
+                else -> getString(R.string.settings_account_tv_auth)
             }
-            tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, typeStr)
+            tvAccountStatus.text = getString(R.string.settings_account_logged_in_format, displayName)
             btnLogin.visibility = View.GONE
             btnCookie.visibility = View.GONE
             btnLogout.visibility = View.VISIBLE

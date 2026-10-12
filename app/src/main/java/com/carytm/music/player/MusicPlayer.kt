@@ -86,18 +86,17 @@ object MusicPlayer {
         appContext = context.applicationContext
         if (exoPlayer != null) return
 
-        val cacheSizeMb = getCacheLimitMb(context)
-        val cacheDir = getAudioCacheDir(context)
-        val evictor = LeastRecentlyUsedCacheEvictor(cacheSizeMb * 1024 * 1024L)
-        val databaseProvider = StandaloneDatabaseProvider(context)
-        simpleCache = SimpleCache(cacheDir, evictor, databaseProvider)
-
         val player = ExoPlayer.Builder(context).build()
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
         player.setAudioAttributes(audioAttributes, false) // CarAudioFocusManager handles focus
+
+        // Asynchronously initialize SimpleCache on background thread to avoid blocking cold start
+        CoroutineScope(Dispatchers.IO).launch {
+            ensureCacheInitialized(context)
+        }
 
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -236,6 +235,7 @@ object MusicPlayer {
         // 2. Immediately update UI state to new song and show buffering
         listeners.forEach {
             it.onSongChanged(song)
+            it.onProgressUpdate(0L, 0L)
             it.onBuffering(true)
             it.onPlayStateChanged(false)
         }
@@ -279,17 +279,22 @@ object MusicPlayer {
             exoPlayer?.let { player ->
                 val uri = Uri.parse(audioUrl)
                 val okHttpFactory = OkHttpDataSource.Factory(NetworkClient.mediaOkHttpClient)
-                val cacheFactory = CacheDataSource.Factory()
-                    .setCache(simpleCache!!)
-                    .setUpstreamDataSourceFactory(okHttpFactory)
-                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                val cache = appContext?.let { ensureCacheInitialized(it) } ?: simpleCache
+                val dataSourceFactory: com.google.android.exoplayer2.upstream.DataSource.Factory = if (cache != null) {
+                    CacheDataSource.Factory()
+                        .setCache(cache)
+                        .setUpstreamDataSourceFactory(okHttpFactory)
+                        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                } else {
+                    okHttpFactory
+                }
 
                 val mediaItem = MediaItem.Builder()
                     .setUri(uri)
                     .setCustomCacheKey(song.videoId)
                     .build()
 
-                val mediaSource = DefaultMediaSourceFactory(cacheFactory)
+                val mediaSource = DefaultMediaSourceFactory(dataSourceFactory)
                     .createMediaSource(mediaItem)
 
                 player.setMediaSource(mediaSource)
@@ -344,18 +349,21 @@ object MusicPlayer {
                     .build()
 
                 val okHttpFactory = OkHttpDataSource.Factory(NetworkClient.mediaOkHttpClient)
-                val cacheDataSource = CacheDataSource.Factory()
-                    .setCache(simpleCache!!)
-                    .setUpstreamDataSourceFactory(okHttpFactory)
-                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-                    .createDataSource()
+                val cache = appContext?.let { ensureCacheInitialized(it) } ?: simpleCache
+                if (cache != null) {
+                    val cacheDataSource = CacheDataSource.Factory()
+                        .setCache(cache)
+                        .setUpstreamDataSourceFactory(okHttpFactory)
+                        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                        .createDataSource()
 
-                val cacheWriter = CacheWriter(cacheDataSource, dataSpec, null, null)
-                cacheWriter.cache()
+                    val cacheWriter = CacheWriter(cacheDataSource, dataSpec, null, null)
+                    cacheWriter.cache()
 
-                appContext?.let { ctx ->
-                    OfflineRepository.markSongFullyCached(ctx, nextSong, dataSpec.length)
-                    trimCacheIfNeeded(ctx)
+                    appContext?.let { ctx ->
+                        OfflineRepository.markSongFullyCached(ctx, nextSong, dataSpec.length)
+                        trimCacheIfNeeded(ctx)
+                    }
                 }
             } catch (e: Throwable) {
                 // Non-critical: if cancelled or interrupted, record as incomplete
@@ -496,6 +504,21 @@ object MusicPlayer {
             }
         }
         return cacheDir
+    }
+
+    @Synchronized
+    fun ensureCacheInitialized(context: Context): SimpleCache? {
+        if (simpleCache != null) return simpleCache
+        try {
+            val cacheSizeMb = getCacheLimitMb(context)
+            val cacheDir = getAudioCacheDir(context)
+            val evictor = LeastRecentlyUsedCacheEvictor(cacheSizeMb * 1024 * 1024L)
+            val databaseProvider = StandaloneDatabaseProvider(context)
+            simpleCache = SimpleCache(cacheDir, evictor, databaseProvider)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return simpleCache
     }
 
     fun setCacheLimitMb(context: Context, sizeMb: Int) {

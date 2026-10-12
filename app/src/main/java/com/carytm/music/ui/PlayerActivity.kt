@@ -177,15 +177,15 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
         if (!isUserTrackingSeekBar) {
             val totalMs = MusicPlayer.getDuration()
             val currentMs = MusicPlayer.getCurrentPosition()
-            if (totalMs > 0) {
+            if (isBuffering || totalMs <= 0) {
+                seekbar.progress = 0
+                tvCurrentTime.text = if (isBuffering) "00:00" else formatTime(currentMs)
+                tvTotalTime.text = if (totalMs > 0) formatTime(totalMs) else "00:00"
+            } else {
                 val progress = ((currentMs.toDouble() / totalMs.toDouble()) * 1000).toInt()
                 seekbar.progress = progress
                 tvCurrentTime.text = formatTime(currentMs)
                 tvTotalTime.text = formatTime(totalMs)
-            } else {
-                seekbar.progress = 0
-                tvCurrentTime.text = formatTime(currentMs)
-                tvTotalTime.text = "00:00"
             }
         }
     }
@@ -222,6 +222,9 @@ class PlayerActivity : AppCompatActivity(), MusicPlayer.PlaybackListener {
 
     override fun onSongChanged(song: SongItem?) {
         runOnUiThread {
+            seekbar.progress = 0
+            tvCurrentTime.text = "00:00"
+            tvTotalTime.text = "00:00"
             updateUI(song, MusicPlayer.isPlaying())
         }
     }
